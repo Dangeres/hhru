@@ -119,7 +119,9 @@ def main():
     for rr in raw_finded_resume:
         parsed = json.loads(rr[0])
 
-        if parsed.get('status') not in ['not_finished'] and (parsed.get('updated') + parsed.get('update_timeout', 14400000)) / 1000 <= int(time.time()):
+        update_time_resume = (parsed.get('updated') + parsed.get('update_timeout', 14400000)) / 1000
+
+        if parsed.get('status') not in ['not_finished'] and update_time_resume <= int(time.time()):
             print(parsed)
 
             finded_resume.append(
