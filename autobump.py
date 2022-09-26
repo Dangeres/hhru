@@ -87,6 +87,76 @@ def main():
     if res_login.status_code != 200:
         print('cant login')
 
+    search_result = session.get(
+        url = 'https://hh.ru/shards/vacancy/search',
+        params = {
+            'area': '1', # Регион: 1 - Москва
+            'schedule': 'remote', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
+            'search_field': 'name', # Ключевые слова В названии вакансии
+            'search_field': 'company_name', # Ключевые слова В названии компании 
+            'search_field': 'description', # Ключевые слова В описании вакансии
+            'salary': '120000', # Зарплата - 120к
+            'only_with_salary': 'true', # Только с зарплатой
+            'text': 'python middle', # Текст поиска
+            'from': 'suggest_post',
+            'clusters': 'true',
+            'ored_clusters': 'true',
+            'enable_snippets': 'true',
+        },
+        headers = {
+            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+            'referer': 'https://hh.ru/',
+            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'x-xsrftoken': token,
+        }
+    )
+
+    search_data = search_result.json()
+
+    my_resume_hash = 'ac940fc5ff0b2962b60039ed1f634651786347'
+
+    for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
+        if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
+            if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
+                result_ = session.post(
+                    url = 'https://hh.ru/applicant/vacancy_response/popup',
+                    data = {
+                        '_xsrf': token,
+                        'vacancy_id': job.get('vacancyId'),
+                        'resume_hash': my_resume_hash,
+                        'ignore_postponed': 'true',
+                        'incomplete': 'false',
+                        'letter': '',
+                        'lux': 'true',
+                        'withoutTest': 'no',
+                        'hhtmFromLabel': 'undefined',
+                        'hhtmSourceLabel': 'undefined',
+                    },
+                    headers = {
+                        'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                        'referer': 'https://hh.ru/',
+                        'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'document',
+                        'sec-fetch-mode': 'navigate',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-user': '?1',
+                        'upgrade-insecure-requests': '1',
+                        'x-xsrftoken': token,
+                    }
+                )
+
+                print('%i - https://hh.ru/vacancy/%i ' % (result_.status_code, job.get('vacancyId'), ))
+
+
     near_bump_time = 0
 
     while True:
