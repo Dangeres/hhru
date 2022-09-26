@@ -160,10 +160,10 @@ def main():
     near_bump_time = 0
 
     while True:
-        await_time = 0
+        await_time = near_bump_time - int(time.time())
 
-        if near_bump_time > 0:
-            await_time = int(time.time()) - near_bump_time
+        if await_time < 0 or near_bump_time == 0:
+            await_time = 0
 
         time.sleep(await_time)
 
@@ -199,12 +199,15 @@ def main():
         for rr in raw_finded_resume:
             parsed = json.loads(rr[0])
 
+            if parsed.get('status') in ['not_finished']:
+                continue
+
             update_time_resume = int((parsed.get('updated') + parsed.get('update_timeout', 14400000)) / 1000)
 
             if update_time_resume < near_bump_time or near_bump_time == 0:
                 near_bump_time = update_time_resume
 
-            if parsed.get('status') not in ['not_finished'] and update_time_resume <= int(time.time()):
+            if update_time_resume <= int(time.time()):
                 print(parsed)
 
                 finded_resume.append(
