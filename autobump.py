@@ -5,6 +5,76 @@ import requests
 
 
 def main():
+    def get_resumes(session):
+        finded_resume = []
+
+        res_resumes = session.get(
+            url = 'https://hh.ru/applicant/resumes',
+            # params = {
+            #     'hhtmFromLabel': 'header',
+            #     'disableBrowserCache': 'true',
+            # },
+            headers = {
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                'referer': 'https://hh.ru/',
+                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'x-xsrftoken': token,
+            },
+        )
+
+        raw_finded_resume = re.findall(
+            pattern = re.compile('({"id": "([\d]+)", "hash": "([\d\w]+)", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
+            # pattern = re.compile('"applicableResumes": \[(\"[\d\w]+\"[, ]*)+\]'),
+            string = res_resumes.text,
+        )
+
+        for rr in raw_finded_resume:
+            parsed = json.loads(rr[0])
+
+            if parsed.get('status') in ['not_finished']:
+                continue
+
+            finded_resume.append(
+                parsed
+            )
+
+        return finded_resume
+
+    
+    def get_available_resumes_bump(session):
+        resumes = get_resumes(session = session)
+        result = []
+
+        for resume in resumes:
+            update_time_resume = int((resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
+
+            if update_time_resume < int(time.time()):
+                result.append(resume)
+ 
+        return result
+
+    
+    def minimum_time_bump(session):
+        resumes = get_resumes(session = session)
+
+        near_bump_time = int((resumes[0].get('updated') + resumes[0].get('update_timeout', 14400000)) / 1000)
+
+        for resume in resumes:
+            update_time_resume = int((resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
+
+            if update_time_resume < near_bump_time:
+                near_bump_time = update_time_resume
+
+        return near_bump_time
+    
+
     settings = open(file = 'settings.txt', mode = 'r', encoding = 'utf8').readlines()
 
     login = settings[0].strip()
@@ -97,10 +167,11 @@ def main():
             'search_field': 'description', # Ключевые слова В описании вакансии
             'salary': '120000', # Зарплата - 120к
             'only_with_salary': 'true', # Только с зарплатой
-            'text': 'python middle', # Текст поиска
+            'text': 'python', # Текст поиска
             'from': 'suggest_post',
             'clusters': 'true',
             'ored_clusters': 'true',
+            'order_by': 'publication_time', # Сортируем по новизне
             'enable_snippets': 'true',
         },
         headers = {
@@ -157,78 +228,20 @@ def main():
                 print('%i - https://hh.ru/vacancy/%i ' % (result_.status_code, job.get('vacancyId'), ))
 
 
-    near_bump_time = 0
-
     while True:
-        await_time = near_bump_time - int(time.time())
+        await_time = minimum_time_bump(session = session) - int(time.time())
 
-        if await_time < 0 or near_bump_time == 0:
+        if await_time < 0:
             await_time = 0
 
         time.sleep(await_time)
+        
+        finded_resume = get_available_resumes_bump(session = session)
 
-        res_resumes = session.get(
-            url = 'https://hh.ru/applicant/resumes',
-            # params = {
-            #     'hhtmFromLabel': 'header',
-            #     'disableBrowserCache': 'true',
-            # },
-            headers = {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-                'x-xsrftoken': token,
-            },
-        )
-
-        finded_resume = []
-
-        raw_finded_resume = re.findall(
-            pattern = re.compile('({"id": "([\d]+)", "hash": "([\d\w]+)", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
-            # pattern = re.compile('"applicableResumes": \[(\"[\d\w]+\"[, ]*)+\]'),
-            string = res_resumes.text,
-        )
-
-        for rr in raw_finded_resume:
-            parsed = json.loads(rr[0])
-
-            if parsed.get('status') in ['not_finished']:
-                continue
-
-            update_time_resume = int((parsed.get('updated') + parsed.get('update_timeout', 14400000)) / 1000)
-
-            if update_time_resume < near_bump_time or near_bump_time == 0:
-                near_bump_time = update_time_resume
-
-            if update_time_resume <= int(time.time()):
-                print(parsed)
-
-                finded_resume.append(
-                    parsed
-                )
-
-        # raw_finded_resume = re.search( # shit solution, i dont like that #TODO
-        #     pattern = re.compile('"applicableResumes": \[((\"[\d\w]+\"[, ]*)+)\]'),
+        # original_request_id = re.search(
+        #     pattern = re.compile('requestId: "([\d\w]+)",'),
         #     string = res_resumes.text,
         # )
-        
-        # if raw_finded_resume:
-        #     finded_resume = re.findall(
-        #         re.compile('"([\d\w]+)\"'),
-        #         raw_finded_resume.group(1),
-        #     )
-
-        original_request_id = re.search(
-            pattern = re.compile('requestId: "([\d\w]+)",'),
-            string = res_resumes.text,
-        )
 
         for resume in finded_resume:
             result = session.post(
