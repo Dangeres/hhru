@@ -200,21 +200,24 @@ def main():
 
         time.sleep(await_time)
 
-        search_data = search_vacancy(session = session, settings = {
-            'area': '1', # Регион: 1 - Москва
-            'schedule': 'remote', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
-            'search_field': 'name', # Ключевые слова В названии вакансии
-            'search_field': 'company_name', # Ключевые слова В названии компании 
-            'search_field': 'description', # Ключевые слова В описании вакансии
-            'salary': '120000', # Зарплата - 120к
-            'only_with_salary': 'true', # Только с зарплатой
-            'text': 'python', # Текст поиска
-            'from': 'suggest_post',
-            'clusters': 'true',
-            'ored_clusters': 'true',
-            'order_by': 'publication_time', # Сортируем по новизне
-            'enable_snippets': 'true',
-        })
+        search_data = search_vacancy(
+            session = session, 
+            params = {
+                'area': '1', # Регион: 1 - Москва
+                'schedule': 'fullDay', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
+                'search_field': 'name', # Ключевые слова В названии вакансии
+                'search_field': 'company_name', # Ключевые слова В названии компании 
+                'search_field': 'description', # Ключевые слова В описании вакансии
+                'salary': '120000', # Зарплата - 120к
+                'only_with_salary': 'true', # Только с зарплатой
+                'text': 'python', # Текст поиска
+                'from': 'suggest_post',
+                'clusters': 'true',
+                'ored_clusters': 'true',
+                'order_by': 'publication_time', # Сортируем по новизне
+                'enable_snippets': 'true',
+            }
+        )
 
         my_resume_hash = 'ac940fc5ff0b2962b60039ed1f634651786347'
 
