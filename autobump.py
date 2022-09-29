@@ -5,6 +5,29 @@ import requests
 
 
 def main():
+    def xsrftoken(session):
+        token = None
+
+        if False:
+            ttoken = re.search(
+                re.compile('"xsrfToken": "([\w\d]+)", '),
+                res.text,
+            )
+
+            if ttoken:
+                token = ttoken.group(1)
+        
+        else:
+            for p in session.cookies.items():
+                if p[0] == '_xsrf':
+                    token = p[1]
+            
+        if not token:
+            print('cant handle xsrfToken')
+
+        return token    
+
+
     def get_resumes(session):
         finded_resume = []
 
@@ -25,7 +48,7 @@ def main():
                 'sec-fetch-site': 'same-origin',
                 'sec-fetch-user': '?1',
                 'upgrade-insecure-requests': '1',
-                'x-xsrftoken': token,
+                'x-xsrftoken': xsrftoken(session = session),
             },
         )
 
@@ -75,91 +98,109 @@ def main():
         return near_bump_time
     
 
+    def search_vacancy(session, params):
+        search_result = session.get(
+            url = 'https://hh.ru/shards/vacancy/search',
+            params = params,
+            headers = {
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                'referer': 'https://hh.ru/',
+                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'x-xsrftoken': xsrftoken(session = session),
+            }
+        )
+
+        try:
+            return search_result.json()
+        except Exception as e:
+            print(e)
+
+        return {}
+
+
+    def get_login_session(login, password):
+        session = requests.session()
+
+        session.get(
+            url = 'https://hh.ru/account/login',
+            params = {
+                'backurl': '/',
+                'hhtmFrom': 'main',
+            },
+            headers = {
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                'referer': 'https://hh.ru/',
+                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+            }
+        )
+
+        res_login = session.post(
+            url = 'https://hh.ru/account/login',
+            params = {
+                'backurl': '/',
+                'hhtmFrom': 'main',
+            },
+            headers = {
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                'referer': 'https://hh.ru/',
+                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'x-xsrftoken': xsrftoken(session = session),
+            },
+            data = {
+                '_xsrf': xsrftoken(session = session),
+                'backUrl': 'https://hh.ru/',
+                'failUrl': '/account/login?backurl=%2F',
+                'remember': 'yes',
+                'username': login,
+                'password': password,
+                'username': login,
+                'isBot': 'false'
+            }
+        )
+
+        if res_login.status_code != 200:
+            print('cant login')
+
+        return session
+
+
     settings = open(file = 'settings.txt', mode = 'r', encoding = 'utf8').readlines()
 
     login = settings[0].strip()
     password = settings[1].strip()
 
-    session = requests.session()
+    session = get_login_session(login = login, password = password)
 
-    res = session.get(
-        url = 'https://hh.ru/account/login',
-        params = {
-            'backurl': '/',
-            'hhtmFrom': 'main',
-        },
-        headers = {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            'referer': 'https://hh.ru/',
-            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-        }
-    )
+    while True:
+        await_time = minimum_time_bump(session = session) - int(time.time())
 
-    token = None
+        if await_time < 0:
+            await_time = 0
 
-    if False:
-        ttoken = re.search(
-            re.compile('"xsrfToken": "([\w\d]+)", '),
-            res.text,
-        )
+        time.sleep(await_time)
 
-        if ttoken:
-            token = ttoken.group(1)
-    
-    else:
-        for p in session.cookies.items():
-            if p[0] == '_xsrf':
-                token = p[1]
-        
-    if not token:
-        print('cant handle xsrfToken')
-
-        return
-
-    res_login = session.post(
-        url = 'https://hh.ru/account/login',
-        params = {
-            'backurl': '/',
-            'hhtmFrom': 'main',
-        },
-        headers = {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            'referer': 'https://hh.ru/',
-            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'x-xsrftoken': token,
-        },
-        data = {
-            '_xsrf': token,
-            'backUrl': 'https://hh.ru/',
-            'failUrl': '/account/login?backurl=%2F',
-            'remember': 'yes',
-            'username': login,
-            'password': password,
-            'username': login,
-            'isBot': 'false'
-        }
-    )
-
-    if res_login.status_code != 200:
-        print('cant login')
-
-    search_result = session.get(
-        url = 'https://hh.ru/shards/vacancy/search',
-        params = {
+        search_data = search_vacancy(session = session, settings = {
             'area': '1', # Регион: 1 - Москва
             'schedule': 'remote', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
             'search_field': 'name', # Ключевые слова В названии вакансии
@@ -173,68 +214,43 @@ def main():
             'ored_clusters': 'true',
             'order_by': 'publication_time', # Сортируем по новизне
             'enable_snippets': 'true',
-        },
-        headers = {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            'referer': 'https://hh.ru/',
-            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'x-xsrftoken': token,
-        }
-    )
+        })
 
-    search_data = search_result.json()
+        my_resume_hash = 'ac940fc5ff0b2962b60039ed1f634651786347'
 
-    my_resume_hash = 'ac940fc5ff0b2962b60039ed1f634651786347'
+        for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
+            if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
+                if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
+                    result_ = session.post(
+                        url = 'https://hh.ru/applicant/vacancy_response/popup',
+                        data = {
+                            '_xsrf': xsrftoken(session = session),
+                            'vacancy_id': job.get('vacancyId'),
+                            'resume_hash': my_resume_hash,
+                            'ignore_postponed': 'true',
+                            'incomplete': 'false',
+                            'letter': '',
+                            'lux': 'true',
+                            'withoutTest': 'no',
+                            'hhtmFromLabel': 'undefined',
+                            'hhtmSourceLabel': 'undefined',
+                        },
+                        headers = {
+                            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                            'referer': 'https://hh.ru/',
+                            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                            'sec-ch-ua-mobile': '?0',
+                            'sec-ch-ua-platform': '"Windows"',
+                            'sec-fetch-dest': 'document',
+                            'sec-fetch-mode': 'navigate',
+                            'sec-fetch-site': 'same-origin',
+                            'sec-fetch-user': '?1',
+                            'upgrade-insecure-requests': '1',
+                            'x-xsrftoken': xsrftoken(session = session),
+                        }
+                    )
 
-    for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
-        if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
-            if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
-                result_ = session.post(
-                    url = 'https://hh.ru/applicant/vacancy_response/popup',
-                    data = {
-                        '_xsrf': token,
-                        'vacancy_id': job.get('vacancyId'),
-                        'resume_hash': my_resume_hash,
-                        'ignore_postponed': 'true',
-                        'incomplete': 'false',
-                        'letter': '',
-                        'lux': 'true',
-                        'withoutTest': 'no',
-                        'hhtmFromLabel': 'undefined',
-                        'hhtmSourceLabel': 'undefined',
-                    },
-                    headers = {
-                        'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                        'referer': 'https://hh.ru/',
-                        'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                        'sec-ch-ua-mobile': '?0',
-                        'sec-ch-ua-platform': '"Windows"',
-                        'sec-fetch-dest': 'document',
-                        'sec-fetch-mode': 'navigate',
-                        'sec-fetch-site': 'same-origin',
-                        'sec-fetch-user': '?1',
-                        'upgrade-insecure-requests': '1',
-                        'x-xsrftoken': token,
-                    }
-                )
-
-                print('%i - https://hh.ru/vacancy/%i ' % (result_.status_code, job.get('vacancyId'), ))
-
-
-    while True:
-        await_time = minimum_time_bump(session = session) - int(time.time())
-
-        if await_time < 0:
-            await_time = 0
-
-        time.sleep(await_time)
+                    print('%i - https://hh.ru/vacancy/%i ' % (result_.status_code, job.get('vacancyId'), ))
         
         finded_resume = get_available_resumes_bump(session = session)
 
@@ -261,36 +277,9 @@ def main():
                     'sec-fetch-site': 'same-origin',
                     'sec-fetch-user': '?1',
                     'upgrade-insecure-requests': '1',
-                    'x-xsrftoken': token,
+                    'x-xsrftoken': xsrftoken(session = session),
                 },
             )
-            
-            # result = session.post(
-            #     url = 'https://hh.ru/analytics',
-            #     params = {
-            #         'hhtmSource': 'resume_list',
-            #         'hhtmFrom': '',
-            #         'hhtmSourceLabel': '',
-            #         'hhtmFromLabel': '',
-            #         'event': 'button_click',
-            #         'buttonName': 'resume_update',
-            #         'resumeId': resume['id'],
-            #         'originalRequestId': original_request_id,
-            #     },
-            #     headers = {
-            #         'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            #         'referer': 'https://hh.ru/',
-            #         'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            #         'sec-ch-ua-mobile': '?0',
-            #         'sec-ch-ua-platform': '"Windows"',
-            #         'sec-fetch-dest': 'document',
-            #         'sec-fetch-mode': 'navigate',
-            #         'sec-fetch-site': 'same-origin',
-            #         'sec-fetch-user': '?1',
-            #         'upgrade-insecure-requests': '1',
-            #         # 'x-xsrftoken': token,
-            #     },
-            # )
 
             print(result.status_code)
 
