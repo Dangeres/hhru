@@ -185,10 +185,18 @@ def main():
         return session
 
 
-    settings = open(file = 'settings.txt', mode = 'r', encoding = 'utf8').readlines()
+    try:
+        settings = open(file = 'settings.txt', mode = 'r', encoding = 'utf8').readlines()
+    except FileNotFoundError:
+        settings = [
+            "",
+            "",
+            "ac940fc5ff0b2962b60039ed1f634651786347"
+        ]
 
     login = settings[0].strip()
     password = settings[1].strip()
+    resume_id = settings[2].strip()
 
     session = get_login_session(login = login, password = password)
 
@@ -219,8 +227,6 @@ def main():
             }
         )
 
-        my_resume_hash = 'ac940fc5ff0b2962b60039ed1f634651786347'
-
         for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
             if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
                 if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
@@ -229,7 +235,7 @@ def main():
                         data = {
                             '_xsrf': xsrftoken(session = session),
                             'vacancy_id': job.get('vacancyId'),
-                            'resume_hash': my_resume_hash,
+                            'resume_hash': resume_id,
                             'ignore_postponed': 'true',
                             'incomplete': 'false',
                             'letter': '',
