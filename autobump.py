@@ -4,7 +4,33 @@ import json
 import requests
 
 
+file_actionless = "actionless.json"
+file_settings = "settings.txt"
+
+
 def main():
+    def return_json(path):
+        try:
+            file_ = open(path, 'r', encoding = "utf8")
+            data = json.loads(file_.read())
+            file_.close()
+
+            del file_
+            
+            return {"success": True, "data": data}
+        except Exception as err:
+            print(err)
+
+        return {"success": False}
+
+
+    def save_json(path, data):
+        try:
+            json.dump(data, open(path, 'w', encoding = "utf8"))
+        except Exception as err:
+            print(err)
+    
+
     def xsrftoken(session):
         token = None
 
@@ -186,7 +212,11 @@ def main():
 
 
     try:
-        settings = open(file = 'settings.txt', mode = 'r', encoding = 'utf8').readlines()
+        settings = open(
+            file = file_settings,
+            mode = 'r',
+            encoding = 'utf8',
+        ).readlines()
     except FileNotFoundError:
         settings = [
             "",
@@ -197,6 +227,13 @@ def main():
     login = settings[0].strip()
     password = settings[1].strip()
     resume_id = settings[2].strip()
+
+    actionless = return_json(file_actionless)
+
+    if not actionless.get('success'):
+        actionless = {}
+    else:
+        actionless = actionless.get('data', {})
 
     session = get_login_session(login = login, password = password)
 
