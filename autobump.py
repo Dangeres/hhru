@@ -282,6 +282,12 @@ def main():
         if await_time < 0:
             await_time = 0
 
+        print(
+            'Ожидаем %i минут перед действиями' % (
+                await_time // 60,
+            )
+        )
+
         time.sleep(await_time)
 
         search_data = search_vacancy(
