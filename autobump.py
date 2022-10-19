@@ -1,6 +1,7 @@
 import re
 import time
 import json
+import datetime
 import requests
 
 
@@ -277,14 +278,16 @@ def main():
     session = get_login_session(login = login, password = password)
 
     while True:
-        await_time = minimum_time_bump(session = session) - int(time.time())
+        bump_time = minimum_time_bump(session = session)
+        await_time = bump_time - int(time.time())
 
         if await_time < 0:
             await_time = 0
 
         print(
-            'Ожидаем %i минут перед действиями' % (
+            'Ожидаем %i минут перед действиями.\nВремя - %s' % (
                 await_time // 60,
+                datetime.datetime.fromtimestamp(bump_time).strftime("%d.%m.%y %H:%M:%S"),
             )
         )
 
@@ -408,7 +411,12 @@ def main():
                 },
             )
 
-            print(result.status_code)
+            print(
+                "%s - %s" % (
+                    result.status_code,
+                    resume['hash'],
+                )
+            )
 
         print('BUMPED')
 
