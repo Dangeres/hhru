@@ -1,6 +1,7 @@
 import re
 import time
 import json
+import random
 import datetime
 import requests
 
@@ -8,6 +9,14 @@ import requests
 file_actionless = "actionless.json"
 file_settings = "settings.txt"
 file_letter = "letter.txt"
+
+
+all_orders = [
+    {},
+    {"order_by": 'publication_time'},
+    {"order_by": 'salary_desc'},
+    {"order_by": 'salary_asc'},
+]
 
 
 def main():
@@ -293,23 +302,30 @@ def main():
 
         time.sleep(await_time)
 
+        int_order = random.randint(0, len(all_orders) - 1)
+
+        prepared_params = {
+            'area': '1', # Регион: 1 - Москва
+            # 'schedule': 'fullDay', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
+            'search_field': 'name', # Ключевые слова В названии вакансии
+            'search_field': 'company_name', # Ключевые слова В названии компании 
+            'search_field': 'description', # Ключевые слова В описании вакансии
+            'salary': '120000', # Зарплата - 120к
+            'only_with_salary': 'true', # Только с зарплатой
+            'text': 'Python', # Текст поиска
+            'from': 'suggest_post',
+            'clusters': 'true',
+            'ored_clusters': 'true',
+            'enable_snippets': 'true',
+        }
+
+        prepared_params.update(
+            all_orders[int_order]
+        )
+
         search_data = search_vacancy(
             session = session, 
-            params = {
-                'area': '1', # Регион: 1 - Москва
-                # 'schedule': 'fullDay', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
-                'search_field': 'name', # Ключевые слова В названии вакансии
-                'search_field': 'company_name', # Ключевые слова В названии компании 
-                'search_field': 'description', # Ключевые слова В описании вакансии
-                'salary': '120000', # Зарплата - 120к
-                'only_with_salary': 'true', # Только с зарплатой
-                'text': 'Python', # Текст поиска
-                'from': 'suggest_post',
-                # 'clusters': 'true',
-                # 'ored_clusters': 'true',
-                # 'order_by': 'publication_time', # Сортируем по новизне
-                # 'enable_snippets': 'true',
-            }
+            params = prepared_params,
         )
 
         # VACANCY ACTION BLOCK
