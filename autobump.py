@@ -302,7 +302,8 @@ def main():
 
         time.sleep(await_time)
 
-        int_order = random.randint(0, len(all_orders) - 1)
+        # int_order = random.randint(0, len(all_orders) - 1)
+        int_order = 0
 
         prepared_params = {
             'area': '1', # Регион: 1 - Москва
@@ -313,6 +314,7 @@ def main():
             'salary': '120000', # Зарплата - 120к
             'only_with_salary': 'true', # Только с зарплатой
             'text': 'Python', # Текст поиска
+            'label': 'not_from_agency', # Без агентств
             'from': 'suggest_post',
             'clusters': 'true',
             'ored_clusters': 'true',
