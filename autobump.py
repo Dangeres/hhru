@@ -74,19 +74,6 @@ def main():
                 'hhtmFromLabel': 'header',
                 'disableBrowserCache': 'true',
             },
-            headers = {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-                'x-xsrftoken': xsrftoken(session = session),
-            },
         )
 
         raw_finded_resume = re.findall(
@@ -139,19 +126,6 @@ def main():
         search_result = session.get(
             url = 'https://hh.ru/shards/vacancy/search',
             params = params,
-            headers = {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-                'x-xsrftoken': xsrftoken(session = session),
-            }
         )
 
         try:
@@ -296,6 +270,22 @@ def main():
 
     session = get_login_session(login = login, password = password)
 
+    session.headers.update(
+        {
+            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+            'referer': 'https://hh.ru/',
+            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'x-xsrftoken': xsrftoken(session = session),
+        }
+    )
+
     while True:
         bump_time = minimum_time_bump(session = session)
         await_time = bump_time - int(time.time())
@@ -361,19 +351,6 @@ def main():
                             'hhtmFromLabel': 'undefined',
                             'hhtmSourceLabel': 'undefined',
                         },
-                        headers = {
-                            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                            'referer': 'https://hh.ru/',
-                            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                            'sec-ch-ua-mobile': '?0',
-                            'sec-ch-ua-platform': '"Windows"',
-                            'sec-fetch-dest': 'document',
-                            'sec-fetch-mode': 'navigate',
-                            'sec-fetch-site': 'same-origin',
-                            'sec-fetch-user': '?1',
-                            'upgrade-insecure-requests': '1',
-                            'x-xsrftoken': xsrftoken(session = session),
-                        },
                     )
 
                     response_array.append(
@@ -423,19 +400,6 @@ def main():
                 data = {
                     'resume': resume['hash'],
                     'undirectable': 'true',
-                },
-                headers = {
-                    'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                    'referer': 'https://hh.ru/',
-                    'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                    'sec-ch-ua-mobile': '?0',
-                    'sec-ch-ua-platform': '"Windows"',
-                    'sec-fetch-dest': 'document',
-                    'sec-fetch-mode': 'navigate',
-                    'sec-fetch-site': 'same-origin',
-                    'sec-fetch-user': '?1',
-                    'upgrade-insecure-requests': '1',
-                    'x-xsrftoken': xsrftoken(session = session),
                 },
             )
 
