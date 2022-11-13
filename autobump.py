@@ -418,7 +418,7 @@ def main():
             )
 
             print(
-                "%s - %s" % (
+                "%s - https://hh.ru/resume/%s" % (
                     result.status_code,
                     resume['hash'],
                 )
