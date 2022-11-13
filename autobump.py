@@ -1,12 +1,15 @@
 import re
+import os
 import time
 import json
 import random
+import pickle
 import datetime
 import requests
 
 
 file_actionless = "actionless.json"
+file_xsrf = "xsrf.bin"
 file_settings = "settings.txt"
 file_letter = "letter.txt"
 
@@ -268,7 +271,18 @@ def main():
     else:
         actionless = actionless.get('data', {})
 
-    session = get_login_session(login = login, password = password)
+    if os.path.exists(file_xsrf) is False:
+        session = get_login_session(login = login, password = password)
+
+        with open(file_xsrf, 'wb') as f:
+            pickle.dump(session.cookies, f)
+    
+    else:
+        session = requests.session()
+
+        with open(file_xsrf, 'rb') as f:
+            session.cookies.update(pickle.load(f))
+    
 
     session.headers.update(
         {
