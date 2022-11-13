@@ -70,10 +70,10 @@ def main():
 
         res_resumes = session.get(
             url = 'https://hh.ru/applicant/resumes',
-            # params = {
-            #     'hhtmFromLabel': 'header',
-            #     'disableBrowserCache': 'true',
-            # },
+            params = {
+                'hhtmFromLabel': 'header',
+                'disableBrowserCache': 'true',
+            },
             headers = {
                 'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
                 'referer': 'https://hh.ru/',
@@ -90,7 +90,7 @@ def main():
         )
 
         raw_finded_resume = re.findall(
-            pattern = re.compile('({"id": "([\d]+)", "hash": "([\d\w]+)", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
+            pattern = re.compile('({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
             # pattern = re.compile('"applicableResumes": \[(\"[\d\w]+\"[, ]*)+\]'),
             string = res_resumes.text,
         )
@@ -165,7 +165,7 @@ def main():
     def get_login_session(login, password):
         session = requests.session()
 
-        session.get(
+        temp_res = session.get(
             url = 'https://hh.ru/account/login',
             params = {
                 'backurl': '/',
@@ -221,6 +221,16 @@ def main():
 
         return session
 
+    # user_agents = return_json('agents.json').get('data', {})
+
+    # browsers_dict = user_agents.get('browsers', {})
+    # browsers_list = list(browsers_dict.keys())
+
+    # my_agent = random.choice(browsers_dict.get(
+    #     browsers_list[random.randint(0, len(browsers_list) - 1)]
+    # ))
+
+    # print(my_agent)
 
     try:
         settings = open(
