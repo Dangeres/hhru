@@ -10,8 +10,7 @@ import requests
 
 file_actionless = "actionless.json"
 file_xsrf = "xsrf.bin"
-file_settings = "settings.txt"
-file_letter = "letter.txt"
+file_settings = "settings.json"
 
 
 all_orders = [
@@ -23,10 +22,26 @@ all_orders = [
 
 
 def main():
+    def dict_raise_on_duplicates(ordered_pairs):
+        """Reject duplicate keys."""
+        d = {}
+
+        for k, v in ordered_pairs:
+            if k in d:
+                raise ValueError(
+                    "duplicate key: %r" % (k, )
+                )
+
+            else:
+                d[k] = v
+        
+        return d
+
     def return_json(path):
         try:
             file_ = open(path, 'r', encoding = "utf8")
             data = json.loads(file_.read())
+            # data = json.loads(file_.read(), object_pairs_hook = dict_raise_on_duplicates)
             file_.close()
 
             del file_
@@ -225,60 +240,18 @@ def main():
 
     # print(my_agent)
 
-    try:
-        settings = open(
-            file = file_settings,
-            mode = 'r',
-            encoding = 'utf8',
-        ).readlines()
+    settings = return_json(file_settings)
 
-        for n, _ in enumerate(settings):
-            settings[n] = settings[n].strip()
-
+    if settings.get('success') is False:
         print(
-            'Файл настроек: %s' % (
-                str(settings),
-            )
-        )
-
-    except FileNotFoundError:
-        settings = [
-            "", # login
-            "", # password
-            "ac940fc5ff0b2962b60039ed1f634651786347", # resume id for action
-        ]
-
-        print(
-            'Не могу найти файл %s.\n\nК сожалению, запуск программы невозможен.' % (
+            'Не могу загрузить все настройки из файла %s' % (
                 file_settings,
             )
         )
 
         return
-
-    letter = ''
-
-    try:
-        letter = open(
-            file = file_letter,
-            mode = 'r',
-            encoding = 'utf8',
-        ).read().strip()
-
-        print(
-            'Сопроводительное письмо:\n%s' % (
-                str(letter),
-            )
-        )
-
-    except FileNotFoundError:
-        print(
-            'Не найден файл с сопроводительным письмом %s.\n\nСопроводительное письмо заполняется автоматически пустым значением.' % (
-                file_letter,
-            )
-        )
-    
-    login, password, resume_id = settings
+    else:
+        settings = settings.get('data')
 
     actionless = return_json(file_actionless)
 
@@ -289,7 +262,7 @@ def main():
 
     try:
         if os.path.exists(file_xsrf) is False:
-            session = get_login_session(login = login, password = password)
+            session = get_login_session(login = settings.get('login'), password = settings.get('password'))
         
         else:
             session = requests.session()
@@ -316,12 +289,12 @@ def main():
     except Exception as e:
         print(e)
 
-        session = get_login_session(login = login, password = password)
+        session = get_login_session(login = settings.get('login'), password = settings.get('password'))
 
     ping_login_request = session.get('https://hh.ru/')
 
     if ping_login_request.status_code != 200:
-        session = get_login_session(login = login, password = password)
+        session = get_login_session(login = settings.get('login'), password = settings.get('password'))
     
     with open(file_xsrf, 'wb') as f:
         pickle.dump(session.cookies, f)
@@ -342,97 +315,110 @@ def main():
 
         time.sleep(await_time)
 
-        # int_order = random.randint(0, len(all_orders) - 1)
-        int_order = 0
+        for index_req, resume in enumerate(settings.get('requests', [])):
+            # int_order = random.randint(0, len(all_orders) - 1)
+            int_order = 0
 
-        prepared_params = {
-            'area': '1', # Регион: 1 - Москва
-            # 'schedule': 'fullDay', # remote - удаленка, fullDay - полный рабочий день, flexible - гибкий график
-            'search_field': 'name', # Ключевые слова В названии вакансии
-            'search_field': 'company_name', # Ключевые слова В названии компании 
-            'search_field': 'description', # Ключевые слова В описании вакансии
-            'salary': '120000', # Зарплата - 120к
-            'only_with_salary': 'true', # Только с зарплатой
-            'text': 'Python', # Текст поиска
-            'label': 'not_from_agency', # Без агентств
-            'from': 'suggest_post',
-            'clusters': 'true',
-            'ored_clusters': 'true',
-            'enable_snippets': 'true',
-        }
+            prepared_params = resume.get('params', {})
 
-        prepared_params.update(
-            all_orders[int_order]
-        )
-
-        search_data = search_vacancy(
-            session = session, 
-            params = prepared_params,
-        )
-
-        # VACANCY ACTION BLOCK
-
-        response_array = []
-
-        for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
-            if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
-                if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
-                    result_ = session.post(
-                        url = 'https://hh.ru/applicant/vacancy_response/popup',
-                        data = {
-                            '_xsrf': xsrftoken(session = session),
-                            'vacancy_id': job.get('vacancyId'),
-                            'resume_hash': resume_id,
-                            'ignore_postponed': 'true',
-                            'incomplete': 'false',
-                            'letter': letter,
-                            'lux': 'true',
-                            'withoutTest': 'no',
-                            'hhtmFromLabel': 'undefined',
-                            'hhtmSourceLabel': 'undefined',
-                        },
-                    )
-
-                    response_array.append(
-                        {
-                            "id": job.get('vacancyId'),
-                            "status": result_.status_code,
-                        }
-                    )
-        
-        # END VACANCY ACTION BLOCK
-
-        # SAVE NO ACTION BLOCK
-
-        for response in response_array:
-            print(
-                '%i - https://hh.ru/vacancy/%i ' % (
-                    response.get('status'), 
-                    response.get('id'), 
-                )
+            prepared_params.update(
+                all_orders[int_order]
             )
 
-            if response.get('status') != 200:
-                if not actionless.get(response['id']):
-                    actionless[response['id']] = {
-                        "found_time": int(time.time()),
-                    }
+            letter = ''
 
-        save_json(
-            file_actionless,
-            actionless,
-        )
+            try:
+                if resume.get('file_letter'):
+                    letter = open(
+                        file = resume.get('file_letter'),
+                        mode = 'r',
+                        encoding = 'utf8',
+                    ).read().strip()
 
-        # END SAVE NO ACTION BLOCK
+                    print(
+                        'Сопроводительное письмо:\n%s' % (
+                            str(letter),
+                        )
+                    )
+                
+                else:
+                    print(
+                        'Файл сопроводительного письма для поиска %i не был найден.\nПерепроверьте файл %s' % (
+                            index_req,
+                            file_settings,
+                        )
+                    )
+
+            except FileNotFoundError:
+                print(
+                    'Не найден файл с сопроводительным письмом %s.\nСопроводительное письмо заполняется автоматически пустым значением.' % (
+                        resume.get('file_letter'),
+                    )
+                )
+
+            search_data = search_vacancy(
+                session = session, 
+                params = prepared_params,
+            )
+
+            # VACANCY ACTION BLOCK
+
+            response_array = []
+
+            for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
+                if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
+                    if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
+                        result_ = session.post(
+                            url = 'https://hh.ru/applicant/vacancy_response/popup',
+                            data = {
+                                '_xsrf': xsrftoken(session = session),
+                                'vacancy_id': job.get('vacancyId'),
+                                'resume_hash': resume.get('id'),
+                                'ignore_postponed': 'true',
+                                'incomplete': 'false',
+                                'letter': letter,
+                                'lux': 'true',
+                                'withoutTest': 'no',
+                                'hhtmFromLabel': 'undefined',
+                                'hhtmSourceLabel': 'undefined',
+                            },
+                        )
+
+                        response_array.append(
+                            {
+                                "id": job.get('vacancyId'),
+                                "status": result_.status_code,
+                            }
+                        )
+            
+            # END VACANCY ACTION BLOCK
+
+            # SAVE NO ACTION BLOCK
+
+            for response in response_array:
+                print(
+                    '%i - https://hh.ru/vacancy/%i ' % (
+                        response.get('status'), 
+                        response.get('id'), 
+                    )
+                )
+
+                if response.get('status') != 200:
+                    if not actionless.get(response['id']):
+                        actionless[response['id']] = {
+                            "found_time": int(time.time()),
+                        }
+
+            save_json(
+                file_actionless,
+                actionless,
+            )
+
+            # END SAVE NO ACTION BLOCK
 
         # BUMP RESUME BLOCK
 
         finded_resume = get_available_resumes_bump(session = session)
-
-        # original_request_id = re.search(
-        #     pattern = re.compile('requestId: "([\d\w]+)",'),
-        #     string = res_resumes.text,
-        # )
 
         for resume in finded_resume:
             result = session.post(

@@ -1,4 +1,4 @@
 actionless.json
+settings.json
 xsrf.bin
-settings.txt
-letter.txt
+letter*.txt

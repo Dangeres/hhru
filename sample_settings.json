@@ -1,0 +1,22 @@
+{
+    "login": "email@gmail.com",
+    "password": "myStrongPassword",
+    "requests": [
+        {
+            "id": "ac940fc5ff0b2962b60039ed1f634651786347",
+            "params": {
+                "area": "1",
+                "search_field": "name",
+                "salary": "120000",
+                "only_with_salary": true,
+                "text": "Python",
+                "label": "not_from_agency",
+                "from": "suggest_post",
+                "clusters": true,
+                "ored_clusters": true,
+                "enable_snippets": true
+            },
+            "file_letter": "letter.txt"
+        }
+    ]
+}
