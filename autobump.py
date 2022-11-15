@@ -363,33 +363,39 @@ def main():
 
             # VACANCY ACTION BLOCK
 
+            needed_vacancy = []
             response_array = []
 
             for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
                 # if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
                     if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
-                        result_ = session.post(
-                            url = 'https://hh.ru/applicant/vacancy_response/popup',
-                            data = {
-                                '_xsrf': xsrftoken(session = session),
-                                'vacancy_id': job.get('vacancyId'),
-                                'resume_hash': resume.get('id'),
-                                'ignore_postponed': 'true',
-                                'incomplete': 'false',
-                                'letter': letter,
-                                'lux': 'true',
-                                'withoutTest': 'no',
-                                'hhtmFromLabel': 'undefined',
-                                'hhtmSourceLabel': 'undefined',
-                            },
+                        needed_vacancy.append(
+                            job.get('vacancyId')
                         )
 
-                        response_array.append(
-                            {
-                                "id": job.get('vacancyId'),
-                                "status": result_.status_code,
-                            }
-                        )
+            for vacancyId in needed_vacancy:
+                result_ = session.post(
+                    url = 'https://hh.ru/applicant/vacancy_response/popup',
+                    data = {
+                        '_xsrf': xsrftoken(session = session),
+                        'vacancy_id': vacancyId,
+                        'resume_hash': resume.get('id'),
+                        'ignore_postponed': 'true',
+                        'incomplete': 'false',
+                        'letter': letter,
+                        'lux': 'true',
+                        'withoutTest': 'no',
+                        'hhtmFromLabel': 'undefined',
+                        'hhtmSourceLabel': 'undefined',
+                    },
+                )
+
+                response_array.append(
+                    {
+                        "id": vacancyId,
+                        "status": result_.status_code,
+                    }
+                )
             
             # END VACANCY ACTION BLOCK
 
