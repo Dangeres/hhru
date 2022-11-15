@@ -366,7 +366,7 @@ def main():
             response_array = []
 
             for job in search_data.get('vacancySearchResult', {}).get('vacancies', []):
-                if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
+                # if not job.get('@responseLetterRequired'): # смотрим что бы без письма была эта штука
                     if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
                         result_ = session.post(
                             url = 'https://hh.ru/applicant/vacancy_response/popup',
