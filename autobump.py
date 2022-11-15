@@ -196,6 +196,22 @@ def main():
         if res_login.status_code != 200:
             print('cant login')
 
+        session.headers.update(
+            {
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                'referer': 'https://hh.ru/',
+                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'x-xsrftoken': xsrftoken(session = session),
+            }
+        )
+
         return session
 
     # user_agents = return_json('agents.json').get('data', {})
@@ -271,34 +287,44 @@ def main():
     else:
         actionless = actionless.get('data', {})
 
-    if os.path.exists(file_xsrf) is False:
+    try:
+        if os.path.exists(file_xsrf) is False:
+            session = get_login_session(login = login, password = password)
+        
+        else:
+            session = requests.session()
+
+            with open(file_xsrf, 'rb') as f:
+                session.cookies.update(pickle.load(f))
+
+            session.headers.update(
+                {
+                    'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                    'referer': 'https://hh.ru/',
+                    'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'sec-fetch-dest': 'document',
+                    'sec-fetch-mode': 'navigate',
+                    'sec-fetch-site': 'same-origin',
+                    'sec-fetch-user': '?1',
+                    'upgrade-insecure-requests': '1',
+                    'x-xsrftoken': xsrftoken(session = session),
+                }
+            )
+        
+    except Exception as e:
+        print(e)
+
         session = get_login_session(login = login, password = password)
 
-        with open(file_xsrf, 'wb') as f:
-            pickle.dump(session.cookies, f)
-    
-    else:
-        session = requests.session()
+    ping_login_request = session.get('https://hh.ru/')
 
-        with open(file_xsrf, 'rb') as f:
-            session.cookies.update(pickle.load(f))
+    if ping_login_request.status_code != 200:
+        session = get_login_session(login = login, password = password)
     
-
-    session.headers.update(
-        {
-            'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            'referer': 'https://hh.ru/',
-            'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'x-xsrftoken': xsrftoken(session = session),
-        }
-    )
+    with open(file_xsrf, 'wb') as f:
+        pickle.dump(session.cookies, f)
 
     while True:
         bump_time = minimum_time_bump(session = session)
