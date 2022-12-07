@@ -9,7 +9,7 @@ import requests
 
 
 file_actionless = "actionless.json"
-file_xsrf = "xsrf.bin"
+file_session = "session.bin"
 file_settings = "settings.json"
 
 
@@ -36,6 +36,7 @@ def main():
                 d[k] = v
         
         return d
+
 
     def return_json(path):
         try:
@@ -261,13 +262,13 @@ def main():
         actionless = actionless.get('data', {})
 
     try:
-        if os.path.exists(file_xsrf) is False:
+        if os.path.exists(file_session) is False:
             session = get_login_session(login = settings.get('login'), password = settings.get('password'))
         
         else:
             session = requests.session()
 
-            with open(file_xsrf, 'rb') as f:
+            with open(file_session, 'rb') as f:
                 session.cookies.update(pickle.load(f))
 
             session.headers.update(
@@ -296,7 +297,7 @@ def main():
     if ping_login_request.status_code != 200:
         session = get_login_session(login = settings.get('login'), password = settings.get('password'))
     
-    with open(file_xsrf, 'wb') as f:
+    with open(file_session, 'wb') as f:
         pickle.dump(session.cookies, f)
 
     while True:
