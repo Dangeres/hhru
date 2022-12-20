@@ -1,6 +1,7 @@
 from hhru import HHRU
 
 import datetime
+import random
 import json
 import time
 
@@ -172,6 +173,8 @@ def main():
                     }
                 )
 
+                time.sleep(random.uniform(0.1, 1.2))
+
             for response in response_array:
                 print(
                     '%i - https://hh.ru/vacancy/%i ' % (
@@ -191,23 +194,25 @@ def main():
                 actionless,
             )
 
-            # BUMP RESUME BLOCK
+        # BUMP RESUME BLOCK
 
-            finded_resume = hhru_object.get_available_resumes_bump()
+        finded_resume = hhru_object.get_available_resumes_bump()
 
-            for resume in finded_resume:
-                result = hhru_object.bump_resume(resume['hash'])
+        time.sleep(random.uniform(1.0, 1.5))
 
-                print(
-                    "%s - https://hh.ru/resume/%s" % (
-                        result,
-                        resume['hash'],
-                    )
+        for resume in finded_resume:
+            result = hhru_object.bump_resume(resume['hash'])
+
+            print(
+                "%s - https://hh.ru/resume/%s" % (
+                    result,
+                    resume['hash'],
                 )
+            )
 
-            print('BUMPED')
+        print('BUMPED')
 
-            # END BUMP RESUME BLOCK
+        # END BUMP RESUME BLOCK
 
 
 if __name__ == '__main__':
