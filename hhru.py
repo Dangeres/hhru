@@ -23,6 +23,8 @@ class HHRU:
         self.file_session = file_session
         self.session = None
 
+        self.count_requests = 10
+
 
     def xsrftoken(self):
         """
@@ -52,28 +54,34 @@ class HHRU:
 
         finded_resume = []
 
-        res_resumes = self.session.get(
-            url = 'https://hh.ru/applicant/resumes',
-            params = {
-                'hhtmFromLabel': 'header',
-                'disableBrowserCache': 'true',
-            },
-        )
+        for _ in range(self.count_requests):
+            try:
+                res_resumes = self.session.get(
+                    url = 'https://hh.ru/applicant/resumes',
+                    params = {
+                        'hhtmFromLabel': 'header',
+                        'disableBrowserCache': 'true',
+                    },
+                )
 
-        raw_finded_resume = re.findall(
-            pattern = re.compile('({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
-            string = res_resumes.text,
-        )
+                raw_finded_resume = re.findall(
+                    pattern = re.compile('({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
+                    string = res_resumes.text,
+                )
 
-        for rr in raw_finded_resume:
-            parsed = json.loads(rr[0])
+                for rr in raw_finded_resume:
+                    parsed = json.loads(rr[0])
 
-            if parsed.get('status') in ['not_finished']:
-                continue
+                    if parsed.get('status') in ['not_finished']:
+                        continue
 
-            finded_resume.append(
-                parsed
-            )
+                    finded_resume.append(
+                        parsed
+                    )
+
+                break
+            except Exception as e:
+                print(e)
 
         return finded_resume
 
@@ -126,15 +134,16 @@ class HHRU:
             :returns: dict - результат выполнения запроса
         """
 
-        search_result = self.session.get(
-            url = 'https://hh.ru/shards/vacancy/search',
-            params = params,
-        )
+        for _ in range(self.count_requests):
+            try:
+                search_result = self.session.get(
+                    url = 'https://hh.ru/shards/vacancy/search',
+                    params = params,
+                )
 
-        try:
-            return search_result.json()
-        except Exception as e:
-            print(e)
+                return search_result.json()
+            except Exception as e:
+                print(e)
 
         return {}
 
@@ -148,74 +157,80 @@ class HHRU:
 
         self.session = requests.session()
 
-        temp_res = self.session.get(
-            url = 'https://hh.ru/account/login',
-            params = {
-                'backurl': '/',
-                'hhtmFrom': 'main',
-            },
-            headers = {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-            }
-        )
+        for _ in range(self.count_requests):
+            try:
+                temp_res = self.session.get(
+                    url = 'https://hh.ru/account/login',
+                    params = {
+                        'backurl': '/',
+                        'hhtmFrom': 'main',
+                    },
+                    headers = {
+                        'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                        'referer': 'https://hh.ru/',
+                        'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'document',
+                        'sec-fetch-mode': 'navigate',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-user': '?1',
+                        'upgrade-insecure-requests': '1',
+                    }
+                )
 
-        res_login = self.session.post(
-            url = 'https://hh.ru/account/login',
-            params = {
-                'backurl': '/',
-                'hhtmFrom': 'main',
-            },
-            headers = {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-                'x-xsrftoken': self.xsrftoken(),
-            },
-            data = {
-                '_xsrf': self.xsrftoken(),
-                'backUrl': 'https://hh.ru/',
-                'failUrl': '/account/login?backurl=%2F',
-                'remember': 'yes',
-                'username': self.login,
-                'password': self.password,
-                'isBot': 'false'
-            }
-        )
+                res_login = self.session.post(
+                    url = 'https://hh.ru/account/login',
+                    params = {
+                        'backurl': '/',
+                        'hhtmFrom': 'main',
+                    },
+                    headers = {
+                        'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                        'referer': 'https://hh.ru/',
+                        'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'document',
+                        'sec-fetch-mode': 'navigate',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-user': '?1',
+                        'upgrade-insecure-requests': '1',
+                        'x-xsrftoken': self.xsrftoken(),
+                    },
+                    data = {
+                        '_xsrf': self.xsrftoken(),
+                        'backUrl': 'https://hh.ru/',
+                        'failUrl': '/account/login?backurl=%2F',
+                        'remember': 'yes',
+                        'username': self.login,
+                        'password': self.password,
+                        'isBot': 'false'
+                    }
+                )
 
-        if res_login.status_code != 200:
-            print('cant login')
+                if res_login.status_code != 200:
+                    print('cant login')
 
-        self.session.headers.update(
-            {
-                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-                'referer': 'https://hh.ru/',
-                'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'document',
-                'sec-fetch-mode': 'navigate',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-user': '?1',
-                'upgrade-insecure-requests': '1',
-                'x-xsrftoken': self.xsrftoken(),
-            }
-        )
+                self.session.headers.update(
+                    {
+                        'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                        'referer': 'https://hh.ru/',
+                        'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"',
+                        'sec-fetch-dest': 'document',
+                        'sec-fetch-mode': 'navigate',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-user': '?1',
+                        'upgrade-insecure-requests': '1',
+                        'x-xsrftoken': self.xsrftoken(),
+                    }
+                )
+
+                break
+            except Exception as e:
+                print(e)
 
         return self.session
 
@@ -228,7 +243,7 @@ class HHRU:
         """
 
         if self.session:
-            for _ in range(10):
+            for _ in range(self.count_requests):
                 try:
                     ping_login_request = self.session.get('https://hh.ru/')
 
@@ -328,13 +343,19 @@ class HHRU:
             :returns: int - статус код выполнения поднятия резюме
         """
 
-        return self.session.post(
-            url = 'https://hh.ru/applicant/resumes/touch',
-            data = {
-                'resume': resume_hash,
-                'undirectable': 'true',
-            },
-        ).status_code
+        for _ in range(self.count_requests):
+            try:
+                return self.session.post(
+                    url = 'https://hh.ru/applicant/resumes/touch',
+                    data = {
+                        'resume': resume_hash,
+                        'undirectable': 'true',
+                    },
+                ).status_code
+            except Exception as e:
+                print(e)
+
+        return 0
     
 
     def vacancy_response(self, vacancyId: int, resume_hash: str, letter: str = ""):
@@ -348,21 +369,28 @@ class HHRU:
             :returns: int - статус код выполнения поднятия резюме
         """
 
-        return self.session.post(
-            url = 'https://hh.ru/applicant/vacancy_response/popup',
-            data = {
-                '_xsrf': self.xsrftoken(),
-                'vacancy_id': vacancyId,
-                'resume_hash': resume_hash,
-                'ignore_postponed': 'true',
-                'incomplete': 'false',
-                'letter': letter,
-                'lux': 'true',
-                'withoutTest': 'no',
-                'hhtmFromLabel': 'undefined',
-                'hhtmSourceLabel': 'undefined',
-            },
-        ).status_code
+        for _ in range(self.count_requests):
+            try:
+                return self.session.post(
+                    url = 'https://hh.ru/applicant/vacancy_response/popup',
+                    data = {
+                        '_xsrf': self.xsrftoken(),
+                        'vacancy_id': vacancyId,
+                        'resume_hash': resume_hash,
+                        'ignore_postponed': 'true',
+                        'incomplete': 'false',
+                        'letter': letter,
+                        'lux': 'true',
+                        'withoutTest': 'no',
+                        'hhtmFromLabel': 'undefined',
+                        'hhtmSourceLabel': 'undefined',
+                    },
+                ).status_code
+            except Exception as e:
+                print(e)
+
+        return 0
+
 
 if __name__ == '__main__':
     hhruobject = HHRU()
