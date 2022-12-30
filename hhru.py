@@ -13,7 +13,7 @@ class HHRU:
         """
             :param login: str - логин для входа на сайт
             :param password: str - пароль для входа на сайт
-            :param * file_session: str - файл для кеширования куки сессии, по дефолту
+            :param * file_session: str - файл для кеширования куки сессии, по дефолту session.bin
 
             :returns: None
         """
