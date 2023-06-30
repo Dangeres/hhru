@@ -1,5 +1,12 @@
+# folders
+
 __pycache__
-nondeclared*
+.vscode
+env
+
+# files
+
+.DS_Store
 actionless.json
 settings.json
 session.bin

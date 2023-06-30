@@ -37,12 +37,8 @@ def main():
 
     def return_json(path):
         try:
-            file_ = open(path, 'r', encoding = "utf8")
-            data = json.loads(file_.read())
-            # data = json.loads(file_.read(), object_pairs_hook = dict_raise_on_duplicates)
-            file_.close()
-
-            del file_
+            with open(path, 'r', encoding = "utf8") as f:
+                data = json.loads(f.read())
             
             return {"success": True, "data": data}
         except Exception as err:
@@ -53,7 +49,8 @@ def main():
 
     def save_json(path, data):
         try:
-            json.dump(data, open(path, 'w', encoding = "utf8"))
+            with open(path, 'w', encoding = "utf8") as f:
+                json.dump(data, f)
         except Exception as err:
             print(err)
     
@@ -123,11 +120,12 @@ def main():
 
             try:
                 if resume.get('file_letter'):
-                    letter = open(
+                    with open(
                         file = resume.get('file_letter'),
                         mode = 'r',
                         encoding = 'utf8',
-                    ).read().strip()
+                    ) as f:
+                        letter = f.read().strip()
 
                     print(
                         'Сопроводительное письмо:\n%s' % (
