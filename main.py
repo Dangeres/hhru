@@ -31,29 +31,26 @@ def main():
 
             else:
                 d[k] = v
-        
-        return d
 
+        return d
 
     def return_json(path):
         try:
-            with open(path, 'r', encoding = "utf8") as f:
+            with open(path, 'r', encoding="utf8") as f:
                 data = json.loads(f.read())
-            
+
             return {"success": True, "data": data}
         except Exception as err:
             print(err)
 
         return {"success": False}
 
-
     def save_json(path, data):
         try:
-            with open(path, 'w', encoding = "utf8") as f:
+            with open(path, 'w', encoding="utf8") as f:
                 json.dump(data, f)
         except Exception as err:
             print(err)
-    
 
     # user_agents = return_json('agents.json').get('data', {})
 
@@ -100,7 +97,8 @@ def main():
         print(
             'Ожидаем %i минут перед действиями.\nВремя - %s' % (
                 await_time // 60,
-                datetime.datetime.fromtimestamp(bump_time).strftime("%d.%m.%y %H:%M:%S"),
+                datetime.datetime.fromtimestamp(
+                    bump_time).strftime("%d.%m.%y %H:%M:%S"),
             )
         )
 
@@ -121,9 +119,9 @@ def main():
             try:
                 if resume.get('file_letter'):
                     with open(
-                        file = resume.get('file_letter'),
-                        mode = 'r',
-                        encoding = 'utf8',
+                        file=resume.get('file_letter'),
+                        mode='r',
+                        encoding='utf8',
                     ) as f:
                         letter = f.read().strip()
 
@@ -132,7 +130,7 @@ def main():
                             str(letter),
                         )
                     )
-                
+
                 else:
                     print(
                         'Сопроводительное письмо - Файл для поиска %i не был найден.\nПерепроверьте файл %s' % (
@@ -152,16 +150,17 @@ def main():
             response_array = []
 
             for job in hhru_object.search_vacancy(prepared_params).get('vacancySearchResult', {}).get('vacancies', []):
-                if len(job.get('userLabels', [])) == 0: # Если никаких дополнительных пометок для нас нет (отказ или отклик)
+                # Если никаких дополнительных пометок для нас нет (отказ или отклик)
+                if len(job.get('userLabels', [])) == 0:
                     needed_vacancy.append(
                         job.get('vacancyId')
                     )
 
             for vacancyId in needed_vacancy:
                 result_ = hhru_object.vacancy_response(
-                    vacancyId = vacancyId,
-                    resume_hash = resume.get('id'),
-                    letter = letter,
+                    vacancyId=vacancyId,
+                    resume_hash=resume.get('id'),
+                    letter=letter,
                 )
 
                 response_array.append(
@@ -176,8 +175,8 @@ def main():
             for response in response_array:
                 print(
                     '%i - https://hh.ru/vacancy/%i ' % (
-                        response.get('status'), 
-                        response.get('id'), 
+                        response.get('status'),
+                        response.get('id'),
                     )
                 )
 

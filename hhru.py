@@ -8,8 +8,8 @@ import re
 
 
 class HHRU:
-    
-    def __init__(self, login: str, password: str, file_session: str = "session.bin") -> None:
+
+    def __init__(self, login: str, password: str, file_session: str = "session.bin", count_requests: int = 10) -> None:
         """
             :param login: str - логин для входа на сайт
             :param password: str - пароль для входа на сайт
@@ -23,8 +23,7 @@ class HHRU:
         self.file_session = file_session
         self.session = None
 
-        self.count_requests = 10
-
+        self.count_requests = count_requests
 
     def xsrftoken(self):
         """
@@ -38,12 +37,11 @@ class HHRU:
         for p in self.session.cookies.items():
             if p[0] == '_xsrf':
                 token = p[1]
-            
+
         if not token:
             print('cant handle xsrfToken')
 
         return token
-
 
     def get_resumes(self):
         """
@@ -57,16 +55,17 @@ class HHRU:
         for _ in range(self.count_requests):
             try:
                 res_resumes = self.session.get(
-                    url = 'https://hh.ru/applicant/resumes',
-                    params = {
+                    url='https://hh.ru/applicant/resumes',
+                    params={
                         'hhtmFromLabel': 'header',
                         'disableBrowserCache': 'true',
                     },
                 )
 
                 raw_finded_resume = re.findall(
-                    pattern = re.compile('({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
-                    string = res_resumes.text,
+                    pattern=re.compile(
+                        '({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
+                    string=res_resumes.text,
                 )
 
                 for rr in raw_finded_resume:
@@ -85,7 +84,6 @@ class HHRU:
 
         return finded_resume
 
-
     def get_available_resumes_bump(self):
         """
             Функция возвращает доступные резюме для бампа на авторизированном аккаунте hh.ru
@@ -97,13 +95,13 @@ class HHRU:
         result = []
 
         for resume in resumes:
-            update_time_resume = int((resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
+            update_time_resume = int(
+                (resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
 
             if update_time_resume < int(time.time()):
                 result.append(resume)
- 
-        return result
 
+        return result
 
     def minimum_time_bump(self):
         """
@@ -114,16 +112,17 @@ class HHRU:
 
         resumes = self.get_resumes()
 
-        near_bump_time = int((resumes[0].get('updated') + resumes[0].get('update_timeout', 14400000)) / 1000)
+        near_bump_time = int(
+            (resumes[0].get('updated') + resumes[0].get('update_timeout', 14400000)) / 1000)
 
         for resume in resumes:
-            update_time_resume = int((resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
+            update_time_resume = int(
+                (resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
 
             if update_time_resume < near_bump_time:
                 near_bump_time = update_time_resume
 
         return near_bump_time
-
 
     def search_vacancy(self, params):
         """
@@ -137,8 +136,8 @@ class HHRU:
         for _ in range(self.count_requests):
             try:
                 search_result = self.session.get(
-                    url = 'https://hh.ru/shards/vacancy/search',
-                    params = params,
+                    url='https://hh.ru/shards/vacancy/search',
+                    params=params,
                 )
 
                 return search_result.json()
@@ -146,7 +145,6 @@ class HHRU:
                 print(e)
 
         return {}
-
 
     def just_login(self):
         """
@@ -160,12 +158,12 @@ class HHRU:
         for _ in range(self.count_requests):
             try:
                 temp_res = self.session.get(
-                    url = 'https://hh.ru/account/login',
-                    params = {
+                    url='https://hh.ru/account/login',
+                    params={
                         'backurl': '/',
                         'hhtmFrom': 'main',
                     },
-                    headers = {
+                    headers={
                         'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
                         'referer': 'https://hh.ru/',
                         'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
@@ -180,12 +178,12 @@ class HHRU:
                 )
 
                 res_login = self.session.post(
-                    url = 'https://hh.ru/account/login',
-                    params = {
+                    url='https://hh.ru/account/login',
+                    params={
                         'backurl': '/',
                         'hhtmFrom': 'main',
                     },
-                    headers = {
+                    headers={
                         'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
                         'referer': 'https://hh.ru/',
                         'sec-ch-ua': '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
@@ -198,7 +196,7 @@ class HHRU:
                         'upgrade-insecure-requests': '1',
                         'x-xsrftoken': self.xsrftoken(),
                     },
-                    data = {
+                    data={
                         '_xsrf': self.xsrftoken(),
                         'backUrl': 'https://hh.ru/',
                         'failUrl': '/account/login?backurl=%2F',
@@ -234,7 +232,6 @@ class HHRU:
 
         return self.session
 
-
     def ping_request(self):
         """
             Функция для проверки доступности сайта hh.ru (используется для проверки авторизации, если пользователь авторизирован, возвращает True)
@@ -251,15 +248,16 @@ class HHRU:
                         self.session = self.just_login()
                     elif ping_login_request.status_code == 200:
                         return True
-                    
+
                 except Exception as e:
                     print(e)
 
                 rnd = random.randint(1, 10)
-                print('ПИНГ: Запрос прошел неудачно, попробую еще раз через %i секунд' % (rnd))
+                print(
+                    'ПИНГ: Запрос прошел неудачно, попробую еще раз через %i секунд' % (rnd))
 
                 time.sleep(rnd)
-        
+
         else:
             print('ПИНГ: Сессия пустая, запрос неудачный!')
 
@@ -267,7 +265,6 @@ class HHRU:
 
         return False
 
-    
     def save_session_from_file(self):
         """
             Функция сериализации сессии в файл
@@ -278,7 +275,6 @@ class HHRU:
         with open(self.file_session, 'wb') as f:
             pickle.dump(self.session.cookies, f)
 
-    
     def return_session_from_file(self):
         """
             Функция для десериализации сессии из файла
@@ -312,27 +308,25 @@ class HHRU:
 
         return self.session
 
-
     def get_login_session(self):
         """
             Главная функция аунтификации, десериализует сессию, пытается сделать пинг запрос, если все окей, возвращает сессию, если все плохо, пытается авторизоваться по новой.
 
             :returns: None
         """
-        
+
         if self.return_session_from_file() is not None:
             if self.ping_request() is True:
                 self.save_session_from_file()
 
                 return self.session
-            
+
         self.session = self.just_login()
 
         if self.ping_request():
             self.save_session_from_file()
 
         return self.session
-
 
     def bump_resume(self, resume_hash: str):
         """
@@ -346,8 +340,8 @@ class HHRU:
         for _ in range(self.count_requests):
             try:
                 return self.session.post(
-                    url = 'https://hh.ru/applicant/resumes/touch',
-                    data = {
+                    url='https://hh.ru/applicant/resumes/touch',
+                    data={
                         'resume': resume_hash,
                         'undirectable': 'true',
                     },
@@ -356,7 +350,6 @@ class HHRU:
                 print(e)
 
         return 0
-    
 
     def vacancy_response(self, vacancyId: int, resume_hash: str, letter: str = ""):
         """
@@ -372,8 +365,8 @@ class HHRU:
         for _ in range(self.count_requests):
             try:
                 return self.session.post(
-                    url = 'https://hh.ru/applicant/vacancy_response/popup',
-                    data = {
+                    url='https://hh.ru/applicant/vacancy_response/popup',
+                    data={
                         '_xsrf': self.xsrftoken(),
                         'vacancy_id': vacancyId,
                         'resume_hash': resume_hash,
@@ -394,5 +387,3 @@ class HHRU:
 
 if __name__ == '__main__':
     hhruobject = HHRU()
-
-    
