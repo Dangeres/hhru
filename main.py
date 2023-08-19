@@ -34,6 +34,7 @@ def main():
 
         return d
 
+
     def return_json(path):
         try:
             with open(path, 'r', encoding="utf8") as f:
@@ -45,12 +46,23 @@ def main():
 
         return {"success": False}
 
+
     def save_json(path, data):
         try:
             with open(path, 'w', encoding="utf8") as f:
                 json.dump(data, f)
         except Exception as err:
             print(err)
+
+
+    def prepare_letter(text, data):
+        for tag in [
+            'name',
+        ]:
+            text = text.replace(f'<{tag}>', data.get(tag, ''))
+        
+        return text
+
 
     # user_agents = return_json('agents.json').get('data', {})
 
@@ -153,19 +165,25 @@ def main():
                 # Если никаких дополнительных пометок для нас нет (отказ или отклик)
                 if len(job.get('userLabels', [])) == 0:
                     needed_vacancy.append(
-                        job.get('vacancyId')
+                        job
+                        # job.get('vacancyId')
                     )
 
-            for vacancyId in needed_vacancy:
+            for vacancy in needed_vacancy:
+                prepared_letter = prepare_letter(
+                    text = letter,
+                    data = vacancy,
+                )
+
                 result_ = hhru_object.vacancy_response(
-                    vacancyId=vacancyId,
+                    vacancyId=vacancy.get('vacancyId'),
                     resume_hash=resume.get('id'),
-                    letter=letter,
+                    letter=prepared_letter,
                 )
 
                 response_array.append(
                     {
-                        "id": vacancyId,
+                        "id": vacancy.get('vacancyId'),
                         "status": result_,
                     }
                 )

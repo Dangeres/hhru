@@ -8,6 +8,6 @@ env
 
 .DS_Store
 actionless.json
-settings.json
+settings*.json
 session.bin
 letter*.txt
