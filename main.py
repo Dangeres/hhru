@@ -17,6 +17,8 @@ all_orders = [
     {"order_by": 'salary_asc'},
 ]
 
+isNeedBump = False
+
 
 def main():
     def dict_raise_on_duplicates(ordered_pairs):
@@ -100,8 +102,12 @@ def main():
     hhru_object.get_login_session()
 
     while True:
-        bump_time = hhru_object.minimum_time_bump()
-        await_time = bump_time - int(time.time())
+        if isNeedBump:
+            bump_time = hhru_object.minimum_time_bump()
+            await_time = bump_time - int(time.time())
+        else:
+            await_time = 0
+            bump_time = time.time()
 
         if await_time < 0:
             await_time = 0
@@ -211,19 +217,22 @@ def main():
 
         # BUMP RESUME BLOCK
 
-        finded_resume = hhru_object.get_available_resumes_bump()
+        if isNeedBump:
+            finded_resume = hhru_object.get_available_resumes_bump()
 
-        time.sleep(random.uniform(1.0, 1.5))
+            time.sleep(random.uniform(1.0, 1.5))
 
-        for resume in finded_resume:
-            result = hhru_object.bump_resume(resume['hash'])
+            for resume in finded_resume:
+                result = hhru_object.bump_resume(resume['hash'])
 
-            print(
-                "%s - https://hh.ru/resume/%s" % (
-                    result,
-                    resume['hash'],
+                print(
+                    "%s - https://hh.ru/resume/%s" % (
+                        result,
+                        resume['hash'],
+                    )
                 )
-            )
+        else:
+            await_time = 60 * 60
 
         print('BUMPED')
 
