@@ -10,48 +10,24 @@ import re
 class HHRU:
 
     def __init__(self, login: str, password: str, file_session: str = "session.bin", count_requests: int = 10) -> None:
-        """
-            :param login: str - логин для входа на сайт
-            :param password: str - пароль для входа на сайт
-            :param * file_session: str - файл для кеширования куки сессии, по дефолту session.bin
-
-            :returns: None
-        """
-
         self.login = login
         self.password = password
         self.file_session = file_session
         self.session = None
-
         self.count_requests = count_requests
 
     def xsrftoken(self):
-        """
-            Функция возвращает xsrf токен в авторизированном аккаунте hh.ru
-
-            :returns: None or str - значение xsrf внутри сессии
-        """
-
         token = None
-
         for p in self.session.cookies.items():
             if p[0] == '_xsrf':
                 token = p[1]
-
         if not token:
             print('cant handle xsrfToken')
-
         return token
 
     def get_resumes(self):
-        """
-            Функция возвращает найденные резюме на авторизированном аккаунте hh.ru
-
-            :returns: list - значения найденных резюме 
-        """
-
         finded_resume = []
-
+        print("Начинаем поиск резюме...")
         for _ in range(self.count_requests):
             try:
                 res_resumes = self.session.get(
@@ -61,100 +37,69 @@ class HHRU:
                         'disableBrowserCache': 'true',
                     },
                 )
+                print(f"Статус ответа: {res_resumes.status_code}")
+                print(f"Текст ответа: {res_resumes.text[:500]}...")  # Выводим первые 500 символов
 
                 raw_finded_resume = re.findall(
                     pattern=re.compile(
-                        '({\"id\": \"([\d]+)\", \"hash\": \"([\d\w]+)\", ([\d\w\,\:\;\'\"\s\-\+\:]+)})'),
+                        r'({"id": "([\d]+)", "hash": "([\d\w]+)", ([\d\w,;\'"\s\-+:]+)})'),
                     string=res_resumes.text,
                 )
 
                 for rr in raw_finded_resume:
                     parsed = json.loads(rr[0])
-
                     if parsed.get('status') in ['not_finished']:
                         continue
-
-                    finded_resume.append(
-                        parsed
-                    )
+                    finded_resume.append(parsed)
 
                 break
             except Exception as e:
-                print(e)
+                print(f"Ошибка при получении резюме: {e}")
 
+        print(f"Найдено резюме: {len(finded_resume)}")
         return finded_resume
 
     def get_available_resumes_bump(self):
-        """
-            Функция возвращает доступные резюме для бампа на авторизированном аккаунте hh.ru
-
-            :returns: list - значения найденных резюме для бампа
-        """
-
         resumes = self.get_resumes()
         result = []
-
         for resume in resumes:
             update_time_resume = int(
-                (resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
-
+                (resume.get('updated', 0) + resume.get('update_timeout', 14400000)) / 1000)
             if update_time_resume < int(time.time()):
                 result.append(resume)
-
         return result
 
     def minimum_time_bump(self):
-        """
-            Функция возвращает значения ближайшего подъема резюме на авторизированном аккаунте hh.ru
-
-            :returns: int - значение ближайшего бампа
-        """
-
         resumes = self.get_resumes()
-
+        if not resumes:
+            print("Не найдено ни одного резюме.")
+            return None
+        
         near_bump_time = int(
-            (resumes[0].get('updated') + resumes[0].get('update_timeout', 14400000)) / 1000)
+            (resumes[0].get('updated', 0) + resumes[0].get('update_timeout', 14400000)) / 1000)
 
         for resume in resumes:
             update_time_resume = int(
-                (resume.get('updated') + resume.get('update_timeout', 14400000)) / 1000)
-
+                (resume.get('updated', 0) + resume.get('update_timeout', 14400000)) / 1000)
             if update_time_resume < near_bump_time:
                 near_bump_time = update_time_resume
 
         return near_bump_time
 
     def search_vacancy(self, params):
-        """
-            Функция поиска открытых вакансий на сайте hh.ru
-
-            :param params: dict - запрос с поиском работы на сайт
-
-            :returns: dict - результат выполнения запроса
-        """
-
         for _ in range(self.count_requests):
             try:
                 search_result = self.session.get(
                     url='https://hh.ru/shards/vacancy/search',
                     params=params,
                 )
-
                 return search_result.json()
             except Exception as e:
-                print(e)
-
+                print(f"Ошибка при поиске вакансий: {e}")
         return {}
 
     def just_login(self):
-        """
-            Функция выполняет авторизацию на сайте hh.ru
-
-            :returns: requsts.session - возвращает сессию на сайте hh.ru
-        """
-
         self.session = requests.session()
-
         for _ in range(self.count_requests):
             try:
                 temp_res = self.session.get(
@@ -228,17 +173,11 @@ class HHRU:
 
                 break
             except Exception as e:
-                print(e)
+                print(f"Ошибка при входе: {e}")
 
         return self.session
 
     def ping_request(self):
-        """
-            Функция для проверки доступности сайта hh.ru (используется для проверки авторизации, если пользователь авторизирован, возвращает True)
-
-            :returns: bool - результат выполнения пинг запроса на сайт hh.ru
-        """
-
         if self.session:
             for _ in range(self.count_requests):
                 try:
@@ -250,11 +189,10 @@ class HHRU:
                         return True
 
                 except Exception as e:
-                    print(e)
+                    print(f"Ошибка при пинге: {e}")
 
                 rnd = random.randint(1, 10)
-                print(
-                    'ПИНГ: Запрос прошел неудачно, попробую еще раз через %i секунд' % (rnd))
+                print(f'ПИНГ: Запрос прошел неудачно, попробую еще раз через {rnd} секунд')
 
                 time.sleep(rnd)
 
@@ -266,23 +204,11 @@ class HHRU:
         return False
 
     def save_session_from_file(self):
-        """
-            Функция сериализации сессии в файл
-
-            :returns: None
-        """
-
         with open(self.file_session, 'wb') as f:
             pickle.dump(self.session.cookies, f)
 
     def return_session_from_file(self):
-        """
-            Функция для десериализации сессии из файла
-
-            :returns: requests.session or None - результат десериализации сессии
-        """
-
-        if os.path.exists(self.file_session) is False:
+        if not os.path.exists(self.file_session):
             return None
 
         self.session = requests.session()
@@ -309,16 +235,9 @@ class HHRU:
         return self.session
 
     def get_login_session(self):
-        """
-            Главная функция аунтификации, десериализует сессию, пытается сделать пинг запрос, если все окей, возвращает сессию, если все плохо, пытается авторизоваться по новой.
-
-            :returns: None
-        """
-
         if self.return_session_from_file() is not None:
             if self.ping_request() is True:
                 self.save_session_from_file()
-
                 return self.session
 
         self.session = self.just_login()
@@ -329,14 +248,6 @@ class HHRU:
         return self.session
 
     def bump_resume(self, resume_hash: str):
-        """
-            Функция поднятия резюме в поиске на авторизированном сайте hh.ru
-
-            :param resume_hash: str - hash-id резюме для поднятия
-
-            :returns: int - статус код выполнения поднятия резюме
-        """
-
         for _ in range(self.count_requests):
             try:
                 return self.session.post(
@@ -347,21 +258,11 @@ class HHRU:
                     },
                 ).status_code
             except Exception as e:
-                print(e)
+                print(f"Ошибка при поднятии резюме: {e}")
 
         return 0
 
     def vacancy_response(self, vacancyId: int, resume_hash: str, letter: str = ""):
-        """
-            Функция отклика на вакансию на авторизированном сайте hh.ru
-
-            :param vacancyId: int - id вакансии для отклика
-            :param resume_hash: str - hash-id резюме для отклика
-            :param letter: str - сопроводительное письмо, по дефолту заполняется пустым значением
-
-            :returns: int - статус код выполнения поднятия резюме
-        """
-
         for _ in range(self.count_requests):
             try:
                 return self.session.post(
@@ -380,10 +281,11 @@ class HHRU:
                     },
                 ).status_code
             except Exception as e:
-                print(e)
+                print(f"Ошибка при отклике на вакансию: {e}")
 
         return 0
 
 
 if __name__ == '__main__':
     hhruobject = HHRU()
+
