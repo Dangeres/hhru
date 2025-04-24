@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 class Resume(BaseModel):
     title: str = Field(description="Название резюме")
     href: str = Field(description="Токен для ссылки на резюме")
-    is_active: bool = Field(description="Поднято ли оно в поиске")
+    updated: int = Field(description="Время последнего поднятия")
+    bump_at: int = Field(description="Когда нужно его поднять в поиске")
 
 
 class MethodEnum(Enum):

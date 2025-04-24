@@ -1,5 +1,6 @@
 from datetime import datetime
 import hashlib
+import json
 import os
 
 import aiosonic
@@ -89,7 +90,7 @@ class HHru:
         print(self.tokens)
 
         return self.tokens
-    
+
     async def _get_headers(self) -> dict[str, str]:
         return {
             "content-type": f"multipart/form-data; boundary={self.boundary}",
@@ -119,8 +120,8 @@ class HHru:
             f"--{self.boundary}\r\nContent-Disposition: form-data; "
             f'name="isBot"\r\n\r\nfalse\r\n--{self.boundary}--\r\n'
         )
-    
-    async def _get_request_data_resume_bump(self, resume: str = None) ->  str:
+
+    async def _get_request_data_resume_bump(self, resume: str = None) -> str:
         """Сгенерим все нужные данные для поднятия резюме"""
 
         return (
@@ -198,6 +199,13 @@ class HHru:
     async def bump_resume(self, resume: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
 
+        for rsme in self.resume:
+            if rsme.href == resume:
+                if rsme.bump_at < int(datetime.now().timestamp()):
+                    continue
+
+                return False
+
         url = "https://hh.ru/applicant/resumes/touch"
 
         headers = await self._get_headers()
@@ -205,7 +213,10 @@ class HHru:
         data = await self._get_request_data_resume_bump(resume=resume)
 
         response = await self._request(
-            method=MethodEnum.post, url=url, headers=headers, data=data,
+            method=MethodEnum.post,
+            url=url,
+            headers=headers,
+            data=data,
         )
 
         return response.status_code == 200
@@ -229,19 +240,26 @@ class HHru:
 
         if response.status_code == 200:
             soup = BeautifulSoup(await response.text(), "lxml")
-            resumes = soup.select('div[data-qa="resume"]')
+
+            noindexes = soup.select("noindex>template")
+
+            # resumes = soup.select('div[data-qa="resume"]')
             self.resume: list[Resume] = []
 
-            for resume in resumes:
-                title = resume.get("data-qa-title")
-                link = resume.select_one("a").get("href")
-                link = link.split("/")[-1].split("?")[0]
+            resumes = json.loads(noindexes[-1].text)
+
+            for resume in resumes.get("applicantResumes", []):
+                title = resume.get("title")[0]["string"]
+                link = resume.get("_attributes", {}).get("hash", "")
+                updated = resume.get("_attributes", {}).get("updated", 0)
 
                 self.resume.append(
                     Resume(
                         title=title,
                         href=link,
-                        is_active=False,
+                        updated=updated,
+                        bump_at=updated
+                        + resume.get("_attributes", {}).get("update_timeout", 0),
                     )
                 )
 
