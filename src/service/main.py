@@ -89,46 +89,47 @@ class HHru:
         print(self.tokens)
 
         return self.tokens
-
-    async def _get_request_data(self, resume: str = None) -> tuple[dict[str, str], str]:
-        """Сгенерим все нужные заголовки и хедеры"""
-
-        headers = {
+    
+    async def _get_headers(self) -> dict[str, str]:
+        return {
             "content-type": f"multipart/form-data; boundary={self.boundary}",
             "cookie": f"_xsrf={self.tokens.xsrf}; hhtoken={self.tokens.hhtoken};",
             "user-agent": self.user_agent,
             "x-xsrftoken": f"{self.tokens.xsrf}",
         }
 
-        if resume is None:
-            data = (
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="_xsrf"\r\n\r\n{self.tokens.xsrf}\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="backUrl"\r\n\r\nhttps://hh.ru/\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="failUrl"\r\n\r\n/account/login\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="remember"\r\n\r\nyes\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="username"\r\n\r\n{self.config.username}\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="password"\r\n\r\n{self.config.password}\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="username"\r\n\r\n{self.config.username}\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="isBot"\r\n\r\nfalse\r\n--{self.boundary}--\r\n'
-            )
-        else:
-            data = (
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="resume"\r\n\r\n{resume}\r\n'
-                f"--{self.boundary}\r\nContent-Disposition: form-data; "
-                f'name="undirectable"\r\n\r\ntrue\r\n'
-                f"--{self.boundary}--\r\n"
-            )
+    async def _get_request_data(self) -> str:
+        """Сгенерим все нужные заголовки и хедеры"""
 
-        return headers, data
+        return (
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="_xsrf"\r\n\r\n{self.tokens.xsrf}\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="backUrl"\r\n\r\nhttps://hh.ru/\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="failUrl"\r\n\r\n/account/login\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="remember"\r\n\r\nyes\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="username"\r\n\r\n{self.config.username}\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="password"\r\n\r\n{self.config.password}\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="username"\r\n\r\n{self.config.username}\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="isBot"\r\n\r\nfalse\r\n--{self.boundary}--\r\n'
+        )
+    
+    async def _get_request_data_resume_bump(self, resume: str = None) ->  str:
+        """Сгенерим все нужные данные для поднятия резюме"""
+
+        return (
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="resume"\r\n\r\n{resume}\r\n'
+            f"--{self.boundary}\r\nContent-Disposition: form-data; "
+            f'name="undirectable"\r\n\r\ntrue\r\n'
+            f"--{self.boundary}--\r\n"
+        )
 
     def __hash_username(self) -> str:
         """Захешируем юзернейм что бы был id у него"""
@@ -165,7 +166,9 @@ class HHru:
             tokens = await self._get_cookie_anonymous()
 
         url = "https://hh.ru/account/login"
-        headers, data = await self._get_request_data()
+
+        headers = await self._get_headers()
+        data = await self._get_request_data()
 
         response = await self._request(
             method=MethodEnum.post,
@@ -197,9 +200,12 @@ class HHru:
 
         url = "https://hh.ru/applicant/resumes/touch"
 
-        headers, data = await self._get_request_data(resume=resume)
+        headers = await self._get_headers()
+
+        data = await self._get_request_data_resume_bump(resume=resume)
+
         response = await self._request(
-            method=MethodEnum.post, url=url, headers=headers, data=data
+            method=MethodEnum.post, url=url, headers=headers, data=data,
         )
 
         return response.status_code == 200
@@ -217,7 +223,8 @@ class HHru:
         """Получить все резюме с залогиненого аккаунта"""
 
         url = "https://hh.ru/applicant/resumes"
-        headers, _ = await self._get_request_data()
+
+        headers = await self._get_headers()
         response = await self._request(method=MethodEnum.get, url=url, headers=headers)
 
         if response.status_code == 200:
