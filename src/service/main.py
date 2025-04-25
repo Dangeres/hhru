@@ -5,7 +5,6 @@ import os
 
 import aiosonic
 import aiofiles
-import re
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
@@ -25,7 +24,7 @@ class HHru:
         os.makedirs(self.config.folder_tokens, exist_ok=True)
 
     async def _request(
-        self, method: MethodEnum, url: str, headers=None, data=None
+        self, method: MethodEnum, url: str, headers=None, data=None,
     ) -> aiosonic.HttpResponse:
         """Сделаем запросы в сторону сайта"""
 
@@ -87,11 +86,11 @@ class HHru:
             hhtoken=hhtoken,
         )
 
-        print(self.tokens)
-
         return self.tokens
 
     async def _get_headers(self) -> dict[str, str]:
+        """Получаем заголовки для запросов"""
+
         return {
             "content-type": f"multipart/form-data; boundary={self.boundary}",
             "cookie": f"_xsrf={self.tokens.xsrf}; hhtoken={self.tokens.hhtoken};",
@@ -243,7 +242,6 @@ class HHru:
 
             noindexes = soup.select("noindex>template")
 
-            # resumes = soup.select('div[data-qa="resume"]')
             self.resume: list[Resume] = []
 
             resumes = json.loads(noindexes[-1].text)
@@ -258,8 +256,10 @@ class HHru:
                         title=title,
                         href=link,
                         updated=updated,
-                        bump_at=updated
-                        + resume.get("_attributes", {}).get("update_timeout", 0),
+                        bump_at=(
+                            updated
+                            + resume.get("_attributes", {}).get("update_timeout", 0)
+                        ),
                     )
                 )
 
