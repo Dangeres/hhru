@@ -2,13 +2,14 @@ from datetime import datetime
 import hashlib
 import json
 import os
+from urllib.parse import urljoin
 
 import aiosonic
 import aiofiles
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-from src.service.schemas import Config, MethodEnum, Resume, Tokens
+from src.service.schemas import Config, MethodEnum, Resume, SearchResponse, Tokens
 
 
 class HHru:
@@ -24,9 +25,16 @@ class HHru:
         os.makedirs(self.config.folder_tokens, exist_ok=True)
 
     async def _request(
-        self, method: MethodEnum, url: str, headers=None, data=None,
+        self,
+        method: MethodEnum,
+        path: str,
+        headers: dict[str, str] | None = None,
+        data: str | bytes = None,
+        params: dict[str, str] | None = None,
     ) -> aiosonic.HttpResponse:
         """Сделаем запросы в сторону сайта"""
+
+        url = urljoin(self.config.url, path)
 
         async with aiosonic.HTTPClient(
             verify_ssl=self.config.verify_ssl,
@@ -38,6 +46,7 @@ class HHru:
                         url=url,
                         headers=headers,
                         data=data,
+                        params=params,
                     )
 
                     return result
@@ -46,6 +55,7 @@ class HHru:
                     result = await session.get(
                         url=url,
                         headers=headers,
+                        params=params,
                     )
 
                     return result
@@ -55,6 +65,7 @@ class HHru:
                         url=url,
                         headers=headers,
                         data=data,
+                        params=params,
                     )
 
                     return result
@@ -65,10 +76,13 @@ class HHru:
     async def _get_cookie_anonymous(self) -> Tokens:
         """Получаем печеньки от анонима"""
 
-        url = "https://hh.ru/"
+        path = ""
 
         headers = {"user-agent": self.user_agent}
-        response = await self._request(method=MethodEnum.head, url=url, headers=headers)
+
+        response = await self._request(
+            method=MethodEnum.head, path=path, headers=headers
+        )
 
         xsrf = (
             response.cookies.get("_xsrf").value
@@ -149,8 +163,8 @@ class HHru:
             async with aiofiles.open(
                 f"{self.config.folder_tokens}/{self.__hash_username()}.json", "r+"
             ) as file:
-                tokens = Tokens.model_validate_json(await file.read())
-                self.tokens = tokens
+                self.tokens = Tokens.model_validate_json(await file.read())
+
                 return self.tokens
         except Exception as err:
             print(err)
@@ -160,19 +174,19 @@ class HHru:
     async def login(self) -> None:
         """Функция для авторизации аккаунта"""
 
+        path = "login"
+
         tokens = await self.get_tokens()
 
         if not tokens:
             tokens = await self._get_cookie_anonymous()
-
-        url = "https://hh.ru/account/login"
 
         headers = await self._get_headers()
         data = await self._get_request_data()
 
         response = await self._request(
             method=MethodEnum.post,
-            url=url,
+            path=path,
             headers=headers,
             data=data,
         )
@@ -198,6 +212,8 @@ class HHru:
     async def bump_resume(self, resume: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
 
+        path = "applicant/resumes/touch"
+
         for rsme in self.resume:
             if rsme.href == resume:
                 if rsme.bump_at < int(datetime.now().timestamp()):
@@ -205,15 +221,13 @@ class HHru:
 
                 return False
 
-        url = "https://hh.ru/applicant/resumes/touch"
-
         headers = await self._get_headers()
 
         data = await self._get_request_data_resume_bump(resume=resume)
 
         response = await self._request(
             method=MethodEnum.post,
-            url=url,
+            path=path,
             headers=headers,
             data=data,
         )
@@ -232,10 +246,12 @@ class HHru:
     async def get_resumes(self) -> list[Resume]:
         """Получить все резюме с залогиненого аккаунта"""
 
-        url = "https://hh.ru/applicant/resumes"
+        path = "applicant/resumes"
 
         headers = await self._get_headers()
-        response = await self._request(method=MethodEnum.get, url=url, headers=headers)
+        response = await self._request(
+            method=MethodEnum.get, path=path, headers=headers
+        )
 
         if response.status_code == 200:
             soup = BeautifulSoup(await response.text(), "lxml")
@@ -264,3 +280,24 @@ class HHru:
                 )
 
         return self.resume
+
+    async def search_vacancy(self, params: dict[str, str]) -> SearchResponse:
+        """
+        Функция поиска открытых вакансий на сайте hh.ru
+
+        :param params: dict - запрос с поиском работы на сайт
+
+        :returns: dict - результат выполнения запроса
+        """
+
+        path = "shards/vacancy/search"
+
+        headers = await self._get_headers()
+        response = await self._request(
+            method=MethodEnum.get, path=path, headers=headers, params=params
+        )
+        response = await response.json()
+
+        result = SearchResponse.model_validate(response)
+
+        return result
