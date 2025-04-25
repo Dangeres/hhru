@@ -1,0 +1,22 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint_and_format:
+    runs-on: ubuntu-latest
+    name: Lint and Format
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: latest
+
+      - name: Check Lint using Ruff
+        run: ruff check
+
+      - name: Check Format using Ruff
+        run: ruff format --check --diff
