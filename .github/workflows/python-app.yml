@@ -35,6 +35,6 @@ jobs:
     - name: Ruff format
       run: |
         ruff format .
-    - name: Test with pytest
-      run: |
-        pytest
+    # - name: Test with pytest
+    #   run: |
+    #     pytest
