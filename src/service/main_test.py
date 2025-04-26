@@ -1,8 +1,8 @@
 from http.cookies import SimpleCookie
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 from src.service.main import HHru
-from src.service.schemas import Config, MethodEnum, Resume, SearchResponse, Tokens
+from src.service.schemas import Config, MethodEnum, Resume, Tokens
 
 
 @pytest.fixture
@@ -21,12 +21,13 @@ def config() -> Config:
 def hh_instance(config) -> HHru:
     return HHru(config)
 
+
 @pytest.fixture
 def mock_get_request_data():
     with patch("src.service.main.HHru._get_request_data") as result:
         mock = AsyncMock()
 
-        mock.return_value = 'mocked_data'
+        mock.return_value = "mocked_data"
 
         result.return_value = mock
 
@@ -38,10 +39,12 @@ def mock_request():
     with patch("src.service.main.HHru._request") as request:
         mock = AsyncMock()
 
-        mock.cookies = SimpleCookie({
-            "_xsrf": "test_xsrf_token",
-            "hhtoken": "test_hhtoken",
-        })
+        mock.cookies = SimpleCookie(
+            {
+                "_xsrf": "test_xsrf_token",
+                "hhtoken": "test_hhtoken",
+            }
+        )
 
         mock.status_code = 200
 
@@ -56,9 +59,9 @@ def mock_get_headers():
         mock = AsyncMock()
 
         mock.return_value = {
-            "content-type": f"multipart/form-data; boundary=boundary",
-            "cookie": f"_xsrf=xsrf; hhtoken=token",
-            "user-agent": 'ua',
+            "content-type": "multipart/form-data; boundary=boundary",
+            "cookie": "_xsrf=xsrf; hhtoken=token",
+            "user-agent": "ua",
             "x-xsrftoken": "xsrf",
         }
 
@@ -80,7 +83,7 @@ def mock_get_cookie_anonymous(hh_instance):
         mock.return_value = hh_instance.tokens
 
         result.return_value = mock
-        
+
         yield mock
 
 
@@ -98,7 +101,9 @@ async def test_request(mock_http_client, hh_instance):
     """Тестирование метода _request."""
     mock_response = AsyncMock()
     mock_response.status_code = 200
-    mock_http_client.return_value.__aenter__.return_value.get.return_value = mock_response
+    mock_http_client.return_value.__aenter__.return_value.get.return_value = (
+        mock_response
+    )
 
     response = await hh_instance._request(MethodEnum.get, "/test-path")
 
@@ -133,12 +138,14 @@ async def test_login(save_tokens, mock_request, hh_instance, mock_get_cookie_ano
 async def test_bump_resume(mock_init_tokens, mock_request, hh_instance):
     """Тестирование метода bump_resume."""
 
-    hh_instance.resume = [Resume(
-        title='test',
-        href='resume_id',
-        updated=0,
-        bump_at=0,
-    )]
+    hh_instance.resume = [
+        Resume(
+            title="test",
+            href="resume_id",
+            updated=0,
+            bump_at=0,
+        )
+    ]
 
     result = await hh_instance.bump_resume("resume_id")
 
