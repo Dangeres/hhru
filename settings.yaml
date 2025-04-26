@@ -1,0 +1,12 @@
+default: &default_config
+  username: "default_username"       # Значение по умолчанию для логина
+  password: "default_password"       # Значение по умолчанию для пароля
+  folder_tokens: "tokens"            # Путь к токенам сессии
+  url: "http://127.0.0.1/"              # URL сайта hh
+  count_requests: 10                 # Количество попыток запроса
+  verify_ssl: false                  # Проверка SSL
+  proxy: null                        # Прокси (по умолчанию отсутствует)
+
+dev:
+  <<: *default_config                # Наследование всех значений из default
+  url: "https://hh.ru/"              # URL сайта hh
