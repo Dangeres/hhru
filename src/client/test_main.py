@@ -1,14 +1,15 @@
 from http.cookies import SimpleCookie
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.client.main import HHru
-from src.client.schemas import Config, MethodEnum, Resume, Tokens
+from src.client.main import HHruClient
+from src.client.schemas import MethodEnum, Resume, Tokens
+from src.config.main import Config
 
 path = "src.client"
 
 
 @pytest.fixture
-def config() -> Config:
+def mock_config() -> Config:
     return Config(
         url="https://hh.ru",
         verify_ssl=True,
@@ -22,13 +23,13 @@ def config() -> Config:
 
 
 @pytest.fixture
-def hh_instance(config) -> HHru:
-    return HHru(config)
+def hh_instance(mock_config) -> HHruClient:
+    return HHruClient(mock_config)
 
 
 @pytest.fixture
 def mock_get_request_data():
-    with patch(f"{path}.main.HHru._get_request_data") as result:
+    with patch(f"{path}.main.HHruClient._get_request_data") as result:
         mock = AsyncMock()
 
         mock.return_value = "mocked_data"
@@ -40,7 +41,7 @@ def mock_get_request_data():
 
 @pytest.fixture
 def mock_request():
-    with patch(f"{path}.main.HHru._request") as request:
+    with patch(f"{path}.main.HHruClient._request") as request:
         mock = AsyncMock()
 
         mock.cookies = SimpleCookie(
@@ -59,7 +60,7 @@ def mock_request():
 
 @pytest.fixture
 def mock_get_headers():
-    with patch(f"{path}.main.HHru._get_headers") as result:
+    with patch(f"{path}.main.HHruClient._get_headers") as result:
         mock = AsyncMock()
 
         mock.return_value = {
@@ -76,7 +77,7 @@ def mock_get_headers():
 
 @pytest.fixture
 def mock_get_cookie_anonymous(hh_instance):
-    with patch(f"{path}.main.HHru._get_cookie_anonymous") as result:
+    with patch(f"{path}.main.HHruClient._get_cookie_anonymous") as result:
         mock = AsyncMock()
 
         hh_instance.tokens = Tokens(
@@ -126,7 +127,7 @@ async def test_get_cookie_anonymous(mock_request, hh_instance):
 
 
 @pytest.mark.asyncio
-@patch(f"{path}.main.HHru.save_tokens")
+@patch(f"{path}.main.HHruClient.save_tokens")
 async def test_login(save_tokens, mock_request, hh_instance, mock_get_cookie_anonymous):
     """Тестирование метода login."""
 

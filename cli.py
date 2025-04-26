@@ -1,33 +1,13 @@
 import asyncio
 
-
-from dynaconf import Dynaconf
-
-from src.client.main import HHru
-from src.client.schemas import Config
+from src.client.main import hhru_client
 
 
 async def main():
-    settings = Dynaconf(
-        settings_files=["settings.yaml"],
-        environments=True,
-        merge_enabled=True,
-        default_env="default",
-        env_switcher="hh_env",
-        envvar_prefix="hh",
-        lowercase_read=True,
-    )
-
-    settings = {key.lower(): value for key, value in settings.to_dict().items()}
-
-    config = Config(**settings)
-
-    hh_service = HHru(config=config)
-
-    await hh_service.login()
+    await hhru_client.login()
 
     print(
-        await hh_service.search_vacancy(
+        await hhru_client.search_vacancy(
             {
                 "ored_clusters": True,
                 "enable_snippets": True,
@@ -42,9 +22,9 @@ async def main():
         )
     )
 
-    resumes = await hh_service.get_resumes()
+    resumes = await hhru_client.get_resumes()
     print(resumes)
-    res = await hh_service.bump_resume(resume=resumes[0].href)
+    res = await hhru_client.bump_resume(resume_href=resumes[0].href)
     print(res)
 
 

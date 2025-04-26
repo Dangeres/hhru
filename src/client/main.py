@@ -1,4 +1,3 @@
-from datetime import datetime
 import hashlib
 import json
 import os
@@ -9,10 +8,11 @@ import aiofiles
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-from src.client.schemas import Config, MethodEnum, Resume, SearchResponse, Tokens
+from src.client.schemas import MethodEnum, Resume, SearchResponse, Tokens
+from src.config.main import Config, config
 
 
-class HHru:
+class HHruClient:
     def __init__(self, config: Config):
         """Получаем обьект который дальше делает магию"""
 
@@ -134,12 +134,12 @@ class HHru:
             f'name="isBot"\r\n\r\nfalse\r\n--{self.boundary}--\r\n'
         )
 
-    async def _get_request_data_resume_bump(self, resume: str = None) -> str:
+    async def _get_request_data_resume_bump(self, resume_href: str = None) -> str:
         """Сгенерим все нужные данные для поднятия резюме"""
 
         return (
             f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="resume"\r\n\r\n{resume}\r\n'
+            f'name="resume"\r\n\r\n{resume_href}\r\n'
             f"--{self.boundary}\r\nContent-Disposition: form-data; "
             f'name="undirectable"\r\n\r\ntrue\r\n'
             f"--{self.boundary}--\r\n"
@@ -209,21 +209,14 @@ class HHru:
 
         await self.save_tokens(tokens=self.tokens)
 
-    async def bump_resume(self, resume: str) -> bool:
+    async def bump_resume(self, resume_href: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
 
         path = "applicant/resumes/touch"
 
-        for rsme in self.resume:
-            if rsme.href == resume:
-                if rsme.bump_at < int(datetime.now().timestamp()):
-                    continue
-
-                return False
-
         headers = await self._get_headers()
 
-        data = await self._get_request_data_resume_bump(resume=resume)
+        data = await self._get_request_data_resume_bump(resume_href=resume_href)
 
         response = await self._request(
             method=MethodEnum.post,
@@ -302,3 +295,6 @@ class HHru:
         result = SearchResponse.model_validate(response)
 
         return result
+
+
+hhru_client = HHruClient(config=config)
