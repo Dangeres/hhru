@@ -3,10 +3,13 @@ default: &default_config
   password: "default_password"       # Значение по умолчанию для пароля
   folder_tokens: "tokens"            # Путь к токенам сессии
   url: "http://127.0.0.1/"              # URL сайта hh
-  count_requests: 10                 # Количество попыток запроса
   verify_ssl: false                  # Проверка SSL
   proxy: null                        # Прокси (по умолчанию отсутствует)
+  black_list_company: []             # Черный список компаний для скипа отклика (взять из ссылки https://hh.ru/employer/1740)
+  black_words: []                    # Черный список слов для поиска вакансий
 
 dev:
   <<: *default_config                # Наследование всех значений из default
   url: "https://hh.ru/"              # URL сайта hh
+  black_list_company: [1740, 3529]
+  black_words: ["микроконтроллер", "fullstack"]
