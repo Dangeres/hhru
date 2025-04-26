@@ -275,7 +275,8 @@ class HHru:
                         bump_at=(
                             updated
                             + resume.get("_attributes", {}).get("update_timeout", 0)
-                        )//1000,
+                        )
+                        // 1000,
                     )
                 )
 
