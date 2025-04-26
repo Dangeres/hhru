@@ -9,7 +9,7 @@ import aiofiles
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-from src.service.schemas import Config, MethodEnum, Resume, SearchResponse, Tokens
+from src.client.schemas import Config, MethodEnum, Resume, SearchResponse, Tokens
 
 
 class HHru:
@@ -271,7 +271,7 @@ class HHru:
                     Resume(
                         title=title,
                         href=link,
-                        updated=updated,
+                        updated=updated // 1000,
                         bump_at=(
                             updated
                             + resume.get("_attributes", {}).get("update_timeout", 0)

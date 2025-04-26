@@ -3,8 +3,8 @@ import asyncio
 
 from dynaconf import Dynaconf
 
-from src.service.main import HHru
-from src.service.schemas import Config
+from src.client.main import HHru
+from src.client.schemas import Config
 
 
 async def main():
