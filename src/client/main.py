@@ -1,23 +1,21 @@
-import hashlib
 import json
 import os
 from urllib.parse import urljoin
 
 import aiosonic
-import aiofiles
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
 from src.client.schemas import MethodEnum, Resume, SearchResponse, Tokens
-from src.config.main import Config, config
+from src.config.main import config
 
 
 class HHruClient:
-    def __init__(self, config: Config):
-        """Получаем обьект который дальше делает магию"""
+    def __init__(self, tokens: Tokens | None):
+        """Клиент с осуществлением запросов к hh.ru"""
 
         self.user_agent = UserAgent().chrome
-        self.tokens = None
+        self.tokens = tokens
         self.config = config
         self.boundary = "boundary"
         self.resume: list[Resume] = []
@@ -73,8 +71,15 @@ class HHruClient:
                 case _:
                     raise Exception(f"{MethodEnum.__name__} has no case")
 
-    async def _get_cookie_anonymous(self) -> Tokens:
-        """Получаем печеньки от анонима"""
+    async def set_tokens(self, tokens: Tokens) -> Tokens:
+        """Установить новые токены для запросов"""
+
+        self.tokens = tokens
+
+        return self.tokens
+
+    async def get_tokens_anonymous(self) -> Tokens:
+        """Получаем токены от анонима"""
 
         path = ""
 
@@ -89,18 +94,17 @@ class HHruClient:
             if response.cookies.get("_xsrf")
             else None
         )
+
         hhtoken = (
             response.cookies.get("hhtoken").value
             if response.cookies.get("hhtoken")
             else None
         )
 
-        self.tokens = Tokens(
+        return Tokens(
             xsrf=xsrf,
             hhtoken=hhtoken,
         )
-
-        return self.tokens
 
     async def _get_headers(self) -> dict[str, str]:
         """Получаем заголовки для запросов"""
@@ -145,41 +149,10 @@ class HHruClient:
             f"--{self.boundary}--\r\n"
         )
 
-    def __hash_username(self) -> str:
-        """Захешируем юзернейм что бы был id у него"""
-        return hashlib.md5(self.config.username.encode("utf-8")).hexdigest()
-
-    async def save_tokens(self, tokens: Tokens):
-        """Сохраняем токен в файл что бы не делать миллион перелогинов"""
-        async with aiofiles.open(
-            f"{self.config.folder_tokens}/{self.__hash_username()}.json", "w+"
-        ) as file:
-            await file.write(tokens.model_dump_json())
-
-    async def get_tokens(self) -> Tokens | None:
-        """Получаем токен из файла"""
-
-        try:
-            async with aiofiles.open(
-                f"{self.config.folder_tokens}/{self.__hash_username()}.json", "r+"
-            ) as file:
-                self.tokens = Tokens.model_validate_json(await file.read())
-
-                return self.tokens
-        except Exception as err:
-            print(err)
-
-        return None
-
-    async def login(self) -> None:
+    async def login(self) -> Tokens:
         """Функция для авторизации аккаунта"""
 
         path = "login"
-
-        tokens = await self.get_tokens()
-
-        if not tokens:
-            tokens = await self._get_cookie_anonymous()
 
         headers = await self._get_headers()
         data = await self._get_request_data()
@@ -196,18 +169,23 @@ class HHruClient:
             if response.cookies.get("_xsrf")
             else None
         )
+
         hhtoken = (
             response.cookies.get("hhtoken").value
             if response.cookies.get("hhtoken")
             else None
         )
 
-        self.tokens = Tokens(
-            xsrf=xsrf,
-            hhtoken=hhtoken,
-        )
+        try:
+            tokens = Tokens(
+                xsrf=xsrf,
+                hhtoken=hhtoken,
+            )
+        except Exception as err:
+            print(await response.text())
+            raise err
 
-        await self.save_tokens(tokens=self.tokens)
+        return tokens
 
     async def bump_resume(self, resume_href: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
@@ -227,31 +205,23 @@ class HHruClient:
 
         return response.status_code == 200
 
-    async def return_data_resume(self, resume_href: str) -> Resume | None:
-        """Возвращает резюме из списка в кеше"""
-
-        for resume in self.resume:
-            if resume.href == resume_href:
-                return resume
-
-        return None
-
     async def get_resumes(self) -> list[Resume]:
         """Получить все резюме с залогиненого аккаунта"""
 
         path = "applicant/resumes"
 
         headers = await self._get_headers()
+
         response = await self._request(
             method=MethodEnum.get, path=path, headers=headers
         )
+
+        result = []
 
         if response.status_code == 200:
             soup = BeautifulSoup(await response.text(), "lxml")
 
             noindexes = soup.select("noindex>template")
-
-            self.resume: list[Resume] = []
 
             resumes = json.loads(noindexes[-1].text)
 
@@ -260,7 +230,7 @@ class HHruClient:
                 link = resume.get("_attributes", {}).get("hash", "")
                 updated = resume.get("_attributes", {}).get("updated", 0)
 
-                self.resume.append(
+                result.append(
                     Resume(
                         title=title,
                         href=link,
@@ -273,7 +243,7 @@ class HHruClient:
                     )
                 )
 
-        return self.resume
+        return result
 
     async def search_vacancy(self, params: dict[str, str]) -> SearchResponse:
         """
@@ -287,14 +257,15 @@ class HHruClient:
         path = "shards/vacancy/search"
 
         headers = await self._get_headers()
+
         response = await self._request(
-            method=MethodEnum.get, path=path, headers=headers, params=params
+            method=MethodEnum.get,
+            path=path,
+            headers=headers,
+            params=params,
         )
         response = await response.json()
 
         result = SearchResponse.model_validate(response)
 
         return result
-
-
-hhru_client = HHruClient(config=config)

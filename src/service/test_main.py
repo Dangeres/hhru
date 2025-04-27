@@ -1,31 +1,42 @@
 import datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.client.main import HHruClient
-from src.client.schemas import Resume
+from src.client.schemas import Resume, Tokens
 from src.config.main import Config
 from src.service.main import HHruService
 from src.service.schemas import BumpResult
 
 
 @pytest.fixture
-def mock_config() -> Config:
-    return Config(
-        url="https://hh.ru",
-        verify_ssl=True,
-        proxy=None,
-        folder_tokens="./tokens",
-        username="test_user",
-        password="test_password",
-        black_list_company=[],
-        black_words=[],
+def mock_config():
+    with patch("src.service.main.config") as ptch:
+        ptch.return_value = Config(
+            url="https://hh.ru",
+            verify_ssl=True,
+            proxy=None,
+            folder_tokens="./tokens",
+            username="test_user",
+            password="test_password",
+            black_list_company=[],
+            black_words=[],
+        )
+
+        yield ptch
+
+
+@pytest.fixture
+def mock_tokens() -> Tokens:
+    return Tokens(
+        xsrf="real_xsrf",
+        hhtoken="real_hhtoken",
     )
 
 
 @pytest.fixture
-def mock_hh_client(mock_config):
-    client = AsyncMock(spec=HHruClient(mock_config))
+def mock_hh_client(mock_config, mock_tokens):
+    client = AsyncMock(spec=HHruClient(tokens=mock_tokens))
 
     client.get_resumes.return_value = [
         Resume(
@@ -62,7 +73,9 @@ def mock_hh_client(mock_config):
 @pytest.fixture
 def mock_hhservice(mock_hh_client):
     service = HHruService()
+
     service.client = mock_hh_client
+
     yield service
 
 

@@ -9,26 +9,29 @@ path = "src.client"
 
 
 @pytest.fixture
-def mock_config() -> Config:
-    return Config(
-        url="https://hh.ru",
-        verify_ssl=True,
-        proxy=None,
-        folder_tokens="./tokens",
-        username="test_user",
-        password="test_password",
-        black_list_company=[],
-        black_words=[],
-    )
+def mock_config():
+    with patch("src.config.main.config") as ptch:
+        ptch.return_value = Config(
+            url="https://hh.ru",
+            verify_ssl=True,
+            proxy=None,
+            folder_tokens="./tokens",
+            username="test_user",
+            password="test_password",
+            black_list_company=[],
+            black_words=[],
+        )
+
+        yield ptch
 
 
 @pytest.fixture
 def hh_instance(mock_config) -> HHruClient:
-    client = HHruClient(mock_config)
-
-    client.tokens = Tokens(
-        xsrf="mocked_xsrf_token",
-        hhtoken="mocked_hhtoken",
+    client = HHruClient(
+        tokens=Tokens(
+            xsrf="mocked_xsrf_token",
+            hhtoken="mocked_hhtoken",
+        ),
     )
 
     return client
@@ -53,23 +56,6 @@ def mock_request():
         yield mock
 
 
-@pytest.fixture
-def mock_get_cookie_anonymous(hh_instance):
-    with patch(f"{path}.main.HHruClient._get_cookie_anonymous") as result:
-        mock = AsyncMock()
-
-        hh_instance.tokens = Tokens(
-            xsrf="anon_xsrf_token",
-            hhtoken="anon_hhtoken",
-        )
-
-        mock.return_value = hh_instance.tokens
-
-        result.return_value = mock
-
-        yield mock
-
-
 @pytest.mark.asyncio
 @patch(f"{path}.main.aiosonic.HTTPClient")
 async def test_request(mock_http_client, hh_instance):
@@ -87,26 +73,41 @@ async def test_request(mock_http_client, hh_instance):
 
 
 @pytest.mark.asyncio
-async def test_get_cookie_anonymous(mock_request, hh_instance):
+async def test_get_tokens_anonymous(mock_request, hh_instance):
     """Тестирование метода _get_cookie_anonymous."""
 
-    tokens = await hh_instance._get_cookie_anonymous()
+    tokens = await hh_instance.get_tokens_anonymous()
 
     assert tokens.xsrf == "test_xsrf_token"
     assert tokens.hhtoken == "test_hhtoken"
 
 
 @pytest.mark.asyncio
-@patch(f"{path}.main.HHruClient.save_tokens")
-async def test_login(save_tokens, mock_request, hh_instance, mock_get_cookie_anonymous):
+async def test_set_tokens(mock_request, hh_instance):
+    """Тестирование метода _get_cookie_anonymous."""
+
+    assert hh_instance.tokens.xsrf == "mocked_xsrf_token"
+    assert hh_instance.tokens.hhtoken == "mocked_hhtoken"
+
+    await hh_instance.set_tokens(
+        tokens=Tokens(
+            xsrf="new_xsrf_token",
+            hhtoken="new_hhtoken",
+        ),
+    )
+
+    assert hh_instance.tokens.xsrf == "new_xsrf_token"
+    assert hh_instance.tokens.hhtoken == "new_hhtoken"
+
+
+@pytest.mark.asyncio
+async def test_login(mock_request, hh_instance):
     """Тестирование метода login."""
 
-    await hh_instance.login()
+    tokens = await hh_instance.login()
 
-    assert hh_instance.tokens.xsrf == "test_xsrf_token"
-    assert hh_instance.tokens.hhtoken == "test_hhtoken"
-
-    save_tokens.assert_called_once()
+    assert tokens.xsrf == "test_xsrf_token"
+    assert tokens.hhtoken == "test_hhtoken"
 
 
 @pytest.mark.asyncio
