@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import AsyncMock
 import pytest
 
@@ -30,8 +31,13 @@ def mock_hh_client(mock_config):
         Resume(
             title="Test1",
             href="1",
-            updated=100,
-            bump_at=100 + 1440,
+            updated=int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+            bump_at=int((datetime.datetime.now() + datetime.timedelta(days=-1, hours=4)).timestamp()),
+        ), Resume(
+            title="Test1",
+            href="1",
+            updated=int((datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()),
+            bump_at=int((datetime.datetime.now() + datetime.timedelta(days=1, hours=4)).timestamp()),
         )
     ]
 
