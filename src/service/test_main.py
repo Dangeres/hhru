@@ -31,14 +31,27 @@ def mock_hh_client(mock_config):
         Resume(
             title="Test1",
             href="1",
-            updated=int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-            bump_at=int((datetime.datetime.now() + datetime.timedelta(days=-1, hours=4)).timestamp()),
-        ), Resume(
+            updated=int(
+                (datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()
+            ),
+            bump_at=int(
+                (
+                    datetime.datetime.now() + datetime.timedelta(days=-1, hours=4)
+                ).timestamp()
+            ),
+        ),
+        Resume(
             title="Test1",
             href="1",
-            updated=int((datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()),
-            bump_at=int((datetime.datetime.now() + datetime.timedelta(days=1, hours=4)).timestamp()),
-        )
+            updated=int(
+                (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
+            ),
+            bump_at=int(
+                (
+                    datetime.datetime.now() + datetime.timedelta(days=1, hours=4)
+                ).timestamp()
+            ),
+        ),
     ]
 
     client.bump_resume.return_value = True

@@ -24,19 +24,14 @@ def mock_config() -> Config:
 
 @pytest.fixture
 def hh_instance(mock_config) -> HHruClient:
-    return HHruClient(mock_config)
+    client = HHruClient(mock_config)
 
+    client.tokens = Tokens(
+        xsrf="mocked_xsrf_token",
+        hhtoken="mocked_hhtoken",
+    )
 
-@pytest.fixture
-def mock_get_request_data():
-    with patch(f"{path}.main.HHruClient._get_request_data") as result:
-        mock = AsyncMock()
-
-        mock.return_value = "mocked_data"
-
-        result.return_value = mock
-
-        yield mock
+    return client
 
 
 @pytest.fixture
@@ -59,23 +54,6 @@ def mock_request():
 
 
 @pytest.fixture
-def mock_get_headers():
-    with patch(f"{path}.main.HHruClient._get_headers") as result:
-        mock = AsyncMock()
-
-        mock.return_value = {
-            "content-type": "multipart/form-data; boundary=boundary",
-            "cookie": "_xsrf=xsrf; hhtoken=token",
-            "user-agent": "ua",
-            "x-xsrftoken": "xsrf",
-        }
-
-        result.return_value = mock
-
-        yield mock
-
-
-@pytest.fixture
 def mock_get_cookie_anonymous(hh_instance):
     with patch(f"{path}.main.HHruClient._get_cookie_anonymous") as result:
         mock = AsyncMock()
@@ -90,14 +68,6 @@ def mock_get_cookie_anonymous(hh_instance):
         result.return_value = mock
 
         yield mock
-
-
-@pytest.fixture
-def mock_init_tokens(hh_instance):
-    hh_instance.tokens = Tokens(
-        xsrf="mocked_xsrf_token",
-        hhtoken="mocked_hhtoken",
-    )
 
 
 @pytest.mark.asyncio
@@ -140,7 +110,7 @@ async def test_login(save_tokens, mock_request, hh_instance, mock_get_cookie_ano
 
 
 @pytest.mark.asyncio
-async def test_bump_resume(mock_init_tokens, mock_request, hh_instance):
+async def test_bump_resume(mock_request, hh_instance):
     """Тестирование метода bump_resume."""
 
     hh_instance.resume = [
@@ -158,7 +128,7 @@ async def test_bump_resume(mock_init_tokens, mock_request, hh_instance):
 
 
 @pytest.mark.asyncio
-async def test_get_resumes(mock_init_tokens, mock_request, hh_instance):
+async def test_get_resumes(mock_request, hh_instance):
     """Тестирование метода get_resumes."""
     mock_request.text.return_value = """
     <html>
@@ -180,7 +150,7 @@ async def test_get_resumes(mock_init_tokens, mock_request, hh_instance):
 
 
 @pytest.mark.asyncio
-async def test_search_vacancy(mock_init_tokens, mock_request, hh_instance):
+async def test_search_vacancy(mock_request, hh_instance):
     """Тестирование метода search_vacancy."""
     mock_request.json.return_value = {
         "searchClustersOrder": {
