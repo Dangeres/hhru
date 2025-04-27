@@ -10,6 +10,8 @@ default: &default_config
 
 dev:
   <<: *default_config                # Наследование всех значений из default
+  username: "dev_username"
+  password: "dev_password"
   url: "https://hh.ru/"              # URL сайта hh
   black_list_company: [1740, 3529]
   black_words: ["микроконтроллер", "fullstack"]
