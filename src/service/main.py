@@ -69,6 +69,8 @@ class HHruService:
 
         await self.save_tokens(tokens=tokens)
 
+        return tokens
+
     async def bump_resume(self) -> BumpResult:
         """Бампим все резюме которые активны для поднятия в поиске"""
 

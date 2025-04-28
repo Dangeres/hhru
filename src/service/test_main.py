@@ -2,7 +2,6 @@ import datetime
 from unittest.mock import AsyncMock, patch
 import pytest
 
-from src.client.main import HHruClient
 from src.client.schemas import Resume, Tokens
 from src.config.main import Config
 from src.service.main import HHruService
@@ -12,7 +11,7 @@ from src.service.schemas import BumpResult
 @pytest.fixture
 def mock_config():
     with patch("src.service.main.config") as ptch:
-        ptch.return_value = Config(
+        cfg = Config(
             url="https://hh.ru",
             verify_ssl=True,
             proxy=None,
@@ -23,7 +22,9 @@ def mock_config():
             black_words=[],
         )
 
-        yield ptch
+        ptch.return_value = cfg
+
+        yield cfg
 
 
 @pytest.fixture
@@ -36,47 +37,94 @@ def mock_tokens() -> Tokens:
 
 @pytest.fixture
 def mock_hh_client(mock_config, mock_tokens):
-    client = AsyncMock(spec=HHruClient(tokens=mock_tokens))
+    with patch("src.service.main.HHruClient") as MockedClient:
+        client = AsyncMock()
 
-    client.get_resumes.return_value = [
-        Resume(
-            title="Test1",
-            href="1",
-            updated=int(
-                (datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()
-            ),
-            bump_at=int(
-                (
-                    datetime.datetime.now() + datetime.timedelta(days=-1, hours=4)
-                ).timestamp()
-            ),
-        ),
-        Resume(
-            title="Test1",
-            href="1",
-            updated=int(
-                (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
-            ),
-            bump_at=int(
-                (
-                    datetime.datetime.now() + datetime.timedelta(days=1, hours=4)
-                ).timestamp()
-            ),
-        ),
-    ]
+        client.tokens.return_value = mock_tokens
 
-    client.bump_resume.return_value = True
+        client.get_resumes.return_value = [
+            Resume(
+                title="Test1",
+                href="1",
+                updated=int(
+                    (datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()
+                ),
+                bump_at=int(
+                    (
+                        datetime.datetime.now() + datetime.timedelta(days=-1, hours=4)
+                    ).timestamp()
+                ),
+            ),
+            Resume(
+                title="Test1",
+                href="1",
+                updated=int(
+                    (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
+                ),
+                bump_at=int(
+                    (
+                        datetime.datetime.now() + datetime.timedelta(days=1, hours=4)
+                    ).timestamp()
+                ),
+            ),
+        ]
 
-    yield client
+        client.bump_resume.return_value = True
+
+        client.get_tokens_anonymous.return_value = Tokens(
+            xsrf="anon_xsrf_token",
+            hhtoken="anon_hhtoken",
+        )
+
+        # Мокаем метод login
+        client.login.return_value = Tokens(
+            xsrf="login_xsrf_token",
+            hhtoken="login_hhtoken",
+        )
+
+        MockedClient.return_value = client
+
+        yield client
 
 
 @pytest.fixture
-def mock_hhservice(mock_hh_client):
+def mock_hhservice(mock_hh_client, mock_config, mock_tokens):
     service = HHruService()
 
+    get_tokens_mock = AsyncMock()
+    get_tokens_mock.return_value = mock_tokens
+
+    save_tokens_mock = AsyncMock()
+    save_tokens_mock.return_value = None
+
+    service.config = mock_config
     service.client = mock_hh_client
 
-    yield service
+    service.get_tokens = get_tokens_mock
+    service.save_tokens = save_tokens_mock
+
+    return service
+
+
+@pytest.mark.asyncio
+async def test_login(mock_hhservice, mock_hh_client):
+    tokens = await mock_hhservice.login()
+
+    mock_hh_client.login.assert_called_once()
+
+    # Проверяем, что set_tokens был вызван с новыми токенами
+    mock_hh_client.set_tokens.assert_called_with(
+        tokens=Tokens(xsrf="login_xsrf_token", hhtoken="login_hhtoken")
+    )
+
+    mock_hh_client.set_tokens.assert_called_with(
+        tokens=Tokens(xsrf="login_xsrf_token", hhtoken="login_hhtoken")
+    )
+
+    assert tokens == Tokens(
+        xsrf="login_xsrf_token",
+        hhtoken="login_hhtoken",
+    )
 
 
 @pytest.mark.asyncio
