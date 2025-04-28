@@ -1,4 +1,5 @@
-from datetime import datetime
+import asyncio
+from datetime import datetime, timedelta
 import hashlib
 
 import aiofiles
@@ -6,6 +7,10 @@ from src.client.main import HHruClient
 from src.client.schemas import Resume, Tokens
 from src.config.main import config
 from src.service.schemas import BumpResult
+
+
+def log(text):
+    print(text)
 
 
 class HHruService:
@@ -54,6 +59,8 @@ class HHruService:
         return None
 
     async def login(self) -> Tokens:
+        """Функция для логина, имеет в себе получение токенов, сохранение их и прочее"""
+
         tokens = await self.get_tokens()
 
         if tokens is None:
@@ -87,3 +94,46 @@ class HHruService:
                 result.bumped.append(resume_href)
 
         return result
+
+    async def idle_resume_bump(self):
+        log(f"{self.idle_resume_bump.__name__} flag {self.config.bump_resume=}")
+
+        while self.config.bump_resume:
+            log(f"{self.idle_resume_bump.__name__}")
+
+            resumes = await self.client.get_resumes()
+
+            log(f"{self.idle_resume_bump.__name__} get resume {resumes}")
+
+            for resume in resumes:
+                if resume.bump_at < int(datetime.now().timestamp()):
+                    result = await self.client.bump_resume(resume_href=resume.href)
+
+                    log(f"{self.idle_resume_bump.__name__} bumped {resume=} {result=}")
+
+            resumes = await self.client.get_resumes()
+
+            minimal_time = int((datetime.now() + timedelta(days=1)).timestamp())
+
+            for resumt in resumes:
+                if resume.bump_at < minimal_time:
+                    minimal_time = resume.bump_at
+
+            sleep_time = minimal_time - int(datetime.now().timestamp())
+
+            log(f"{self.idle_resume_bump.__name__} sleep {sleep_time} seconds")
+
+            await asyncio.sleep(sleep_time)
+
+    async def idle_vacancy_apply(self):
+        while True:
+            log(f"{self.idle_vacancy_apply.__name__}")
+            await asyncio.sleep(self.config.vacancy_find_delay)
+
+    async def run(self):
+        await self.login()
+
+        await asyncio.gather(
+            self.idle_resume_bump(),
+            self.idle_vacancy_apply(),
+        )

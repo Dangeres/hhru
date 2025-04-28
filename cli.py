@@ -5,8 +5,7 @@ from src.service.main import HHruService
 
 async def main():
     service = HHruService()
-    await service.login()
-    await service.bump_resume()
+    await service.run()
 
 
 if __name__ == "__main__":

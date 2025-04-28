@@ -7,6 +7,8 @@ default: &default_config
   proxy: null                        # Прокси (по умолчанию отсутствует)
   black_list_company: []             # Черный список компаний для скипа отклика (взять из ссылки https://hh.ru/employer/1740)
   black_words: []                    # Черный список слов для поиска вакансий
+  bump_resume: true                  # Поднимаем резюме в поиске для эйчаров
+  vacancy_find_delay: 14400          # Задержка перед поиском вакансий в секундах (4 часа)
 
 dev:
   <<: *default_config                # Наследование всех значений из default
