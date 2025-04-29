@@ -22,6 +22,9 @@ class Config(BaseModel):
         description="Черный список компаний, все вакансии будут скипаться"
     )
     bump_resume: bool = Field(description="Нужно ли поднимать резюме в поиске")
+    apply_vacancy: bool = Field(
+        description="Нужно ли искать вакансии и откликаться на них"
+    )
     vacancy_find_delay: int = Field(
         description="Задержка перед поиском и откликом на вакансии (секунды)"
     )

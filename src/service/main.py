@@ -136,7 +136,7 @@ class HHruService:
             await asyncio.sleep(sleep_time)
 
     async def idle_vacancy_apply(self):
-        while True:
+        while self.config.apply_vacancy:
             log(f"{self.idle_vacancy_apply.__name__}")
 
             for search in self.config.search:
