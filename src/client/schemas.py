@@ -119,7 +119,7 @@ class ProxiedSearchFormParams(BaseModel):
     search_session_id: str
     ored_clusters: bool
     text: str
-    enable_snippets: bool
+    enable_snippets: bool | None = Field(default=None)
     excluded_text: str
 
 

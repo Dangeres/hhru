@@ -12,18 +12,30 @@ default: &default_config
     {
       "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
       "params": {
-        "ored_clusters": "true",
-        "enable_snippets": "false",
-        "area": "1",
-        "items_on_page": "100",
+        "ored_clusters": true,
+        "enable_snippets": false,
+        "area": 1,
+        "items_on_page": 100,
         "excluded_text": "qa,ml",
         "label": "not_from_agency",
         "search_field": "name",
         "text": "python senior"
       },
       "letter": "🔥",
+    }, {
+      "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
+      "params": {
+        "ored_clusters": true,
+        "enable_snippets": false,
+        "area": 1,
+        "items_on_page": 100,
+        "excluded_text": "qa,ml",
+        "label": "not_from_agency",
+        "search_field": "name",
+        "text": "golang middle"
+      },
+      "letter": "🔥",
     }
-    
   ]
 
 dev:
