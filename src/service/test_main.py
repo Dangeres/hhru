@@ -113,20 +113,14 @@ def mock_hhservice(mock_hh_client, mock_config, mock_tokens):
 async def test_login(mock_hhservice, mock_hh_client):
     tokens = await mock_hhservice.login()
 
-    mock_hh_client.login.assert_called_once()
-
     # Проверяем, что set_tokens был вызван с новыми токенами
     mock_hh_client.set_tokens.assert_called_with(
-        tokens=Tokens(xsrf="login_xsrf_token", hhtoken="login_hhtoken")
-    )
-
-    mock_hh_client.set_tokens.assert_called_with(
-        tokens=Tokens(xsrf="login_xsrf_token", hhtoken="login_hhtoken")
+        tokens=Tokens(xsrf="real_xsrf", hhtoken="real_hhtoken")
     )
 
     assert tokens == Tokens(
-        xsrf="login_xsrf_token",
-        hhtoken="login_hhtoken",
+        xsrf="real_xsrf",
+        hhtoken="real_hhtoken",
     )
 
 

@@ -67,22 +67,20 @@ class HHruService:
         if tokens is None:
             tokens = await self.client.get_tokens_anonymous()
 
-        await self.client.set_tokens(tokens=tokens)
+            try:
+                tokens = await self.client.login()
+            except InvalidCaptcha as err:
+                # captcha = await self.client.get_captcha()
 
-        try:
-            tokens = await self.client.login()
-        except InvalidCaptcha as err:
-            # captcha = await self.client.get_captcha()
-
-            log(
-                self.client.build_url(
-                    f"captcha/picture?key={err.captcha.hhcaptcha.captchaKey}"
+                log(
+                    self.client.build_url(
+                        f"captcha/picture?key={err.captcha.hhcaptcha.captchaKey}"
+                    )
                 )
-            )
 
-            raise err
+                raise err
 
-        # TODO если тут ошибка, давай перезапросим токены начиная с анонимных и сделаем авторизацию по новой
+            # TODO если тут ошибка, давай перезапросим токены начиная с анонимных и сделаем авторизацию по новой
 
         await self.client.set_tokens(tokens=tokens)
 
@@ -148,8 +146,16 @@ class HHruService:
                 vacancy: list[Vacancie] = []
 
                 for vac in raw_vacancy:
-                    if vac.company.id not in self.config.black_list_company:
-                        vacancy.append(vac)
+                    if vac.company.id in self.config.black_list_company:
+                        continue
+
+                    if vac.userTestId is not None:
+                        continue
+
+                    if len(vac.userLabels) > 0:
+                        continue
+
+                    vacancy.append(vac)
 
                 print(vacancy)
 

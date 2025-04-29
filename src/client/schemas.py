@@ -111,6 +111,8 @@ class Vacancie(BaseModel):
     allowChatWithManager: bool
     searchRid: str
     company: Company
+    userTestId: int | None = Field(default=None)
+    userLabels: list[str] = Field(default=[])
 
 
 class ProxiedSearchFormParams(BaseModel):
