@@ -19,7 +19,6 @@ def mock_config():
             username="test_user",
             password="test_password",
             black_list_company=[],
-            black_words=[],
             bump_resume=True,
             vacancy_find_delay=14400,
             search=[],

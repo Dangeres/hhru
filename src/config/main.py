@@ -21,7 +21,6 @@ class Config(BaseModel):
     black_list_company: list[int] = Field(
         description="Черный список компаний, все вакансии будут скипаться"
     )
-    black_words: list[str] = Field(description="Черные слова для поиска вакансий")
     bump_resume: bool = Field(description="Нужно ли поднимать резюме в поиске")
     vacancy_find_delay: int = Field(
         description="Задержка перед поиском и откликом на вакансии (секунды)"

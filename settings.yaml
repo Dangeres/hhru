@@ -6,20 +6,18 @@ default: &default_config
   verify_ssl: false                  # Проверка SSL
   proxy: null                        # Прокси (по умолчанию отсутствует)
   black_list_company: []             # Черный список компаний для скипа отклика (взять из ссылки https://hh.ru/employer/1740)
-  black_words: []                    # Черный список слов для поиска вакансий
-  bump_resume: true                  # Поднимаем резюме в поиске для эйчаров
+  bump_resume: false                  # Поднимаем резюме в поиске для эйчаров
   vacancy_find_delay: 14400          # Задержка перед поиском вакансий в секундах (4 часа)
   search: [
     {
       "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
       "params": {
-        "order_by": "publication_time",
-        "items_on_page": 100,
-        "L_save_area": true,
-        "hhtmFrom": "vacancy_search_filter",
-        "enable_snippets": true,
-        "area": 1,
-        "excluded_text": "fullstack",
+        "ored_clusters": "true",
+        "enable_snippets": "false",
+        "area": "1",
+        "items_on_page": "100",
+        "excluded_text": "qa,ml",
+        "label": "not_from_agency",
         "search_field": "name",
         "text": "python senior"
       },
@@ -33,6 +31,8 @@ dev:
   username: "dev_username"
   password: "dev_password"
   url: "https://hh.ru/"              # URL сайта hh
-  black_list_company: [1740, 3529]
-  black_words: ["микроконтроллер", "fullstack"]
-  bump_resume: false 
+  black_list_company: [
+    1740, # Яндекс
+    3529, # Сбер
+  ]
+  bump_resume: true 
