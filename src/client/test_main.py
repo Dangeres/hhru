@@ -22,6 +22,7 @@ def mock_config():
             password="test_password",
             black_list_company=[],
             bump_resume=True,
+            apply_vacancy=True,
             vacancy_find_delay=14400,
             search=[],
         )
