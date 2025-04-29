@@ -22,6 +22,7 @@ def mock_config():
             black_words=[],
             bump_resume=True,
             vacancy_find_delay=14400,
+            params_search={},
         )
 
         ptch.return_value = cfg

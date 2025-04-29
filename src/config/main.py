@@ -18,6 +18,9 @@ class Config(BaseModel):
     vacancy_find_delay: int = Field(
         description="Задержка перед поиском и откликом на вакансии (секунды)"
     )
+    params_search: dict = Field(
+        description="Параметры для поиска вакансии",
+    )
 
 
 def init_config() -> Config:

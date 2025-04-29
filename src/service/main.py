@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 import hashlib
 
 import aiofiles
+from src.client.exceptions import InvalidCaptcha
 from src.client.main import HHruClient
-from src.client.schemas import Resume, Tokens
+from src.client.schemas import Resume, Tokens, Vacancie
 from src.config.main import config
 from src.service.schemas import BumpResult
 
@@ -68,7 +69,16 @@ class HHruService:
 
         await self.client.set_tokens(tokens=tokens)
 
-        tokens = await self.client.login()
+        try:
+            tokens = await self.client.login()
+        except InvalidCaptcha as err:
+            log(
+                self.client.build_url(
+                    f"captcha/picture?key={err.captcha.hhcaptcha.captchaKey}"
+                )
+            )
+
+            raise err
 
         # TODO если тут ошибка, давай перезапросим токены начиная с анонимных и сделаем авторизацию по новой
 
@@ -128,6 +138,24 @@ class HHruService:
     async def idle_vacancy_apply(self):
         while True:
             log(f"{self.idle_vacancy_apply.__name__}")
+
+            response = await self.client.search_vacancy(self.config.params_search)
+            raw_vacancy = response.vacancySearchResult.vacancies
+
+            vacancy: list[Vacancie] = []
+
+            for vac in raw_vacancy:
+                if vac.company.id not in self.config.black_list_company:
+                    vacancy.append(vac)
+
+            print(vacancy)
+
+            for vac in vacancy:
+                result = await self.client.apply_vacancy()
+                # TODO
+
+                log(f"<{result}> [{vac.company.name}]: {vac.name}")
+
             await asyncio.sleep(self.config.vacancy_find_delay)
 
     async def run(self):

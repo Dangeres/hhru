@@ -1,6 +1,8 @@
 from http.cookies import SimpleCookie
 import pytest
 from unittest.mock import AsyncMock, patch
+from starlette import status
+from src.client.exceptions import InvalidCaptcha
 from src.client.main import HHruClient
 from src.client.schemas import MethodEnum, Resume, Tokens
 from src.config.main import Config
@@ -22,6 +24,7 @@ def mock_config():
             black_words=[],
             bump_resume=True,
             vacancy_find_delay=14400,
+            params_search={},
         )
 
         yield ptch
@@ -51,7 +54,7 @@ def mock_request():
             }
         )
 
-        mock.status_code = 200
+        mock.status_code = status.HTTP_200_OK
 
         request.return_value = mock
 
@@ -63,14 +66,14 @@ def mock_request():
 async def test_request(mock_http_client, hh_instance):
     """Тестирование метода _request."""
     mock_response = AsyncMock()
-    mock_response.status_code = 200
+    mock_response.status_code = status.HTTP_200_OK
     mock_http_client.return_value.__aenter__.return_value.get.return_value = (
         mock_response
     )
 
-    response = await hh_instance._request(MethodEnum.get, "/test-path")
+    response = await hh_instance._request(MethodEnum.get, "test-path")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     mock_http_client.assert_called_once()
 
 
@@ -106,10 +109,40 @@ async def test_set_tokens(mock_request, hh_instance):
 async def test_login(mock_request, hh_instance):
     """Тестирование метода login."""
 
+    mock_request.json.return_value = {
+        "recaptcha": {
+            "isBot": False,
+            "siteKey": "6Ld7XBgTAAAAABhqMs0avEPpilCq3w8FsocJLK_n",
+        },
+        "hhcaptcha": {"isBot": False, "captchaError": None, "captchaKey": None},
+    }
+
     tokens = await hh_instance.login()
 
     assert tokens.xsrf == "test_xsrf_token"
     assert tokens.hhtoken == "test_hhtoken"
+
+
+@pytest.mark.asyncio
+async def test_login_captcha(mock_request, hh_instance):
+    """Тестирование метода login."""
+
+    mock_request.json.return_value = {
+        "recaptcha": {
+            "isBot": True,
+            "siteKey": "6Ld7XBgTAAAAABhqMs0avEPpilCq3w8FsocJLK_n",
+        },
+        "hhcaptcha": {"isBot": True, "captchaError": None, "captchaKey": "captcha_key"},
+    }
+
+    mock_request.status_code = status.HTTP_401_UNAUTHORIZED
+
+    try:
+        await hh_instance.login()
+    except InvalidCaptcha as e:
+        assert e.captcha.hhcaptcha.isBot
+        assert e.captcha.recaptcha.isBot
+        assert e.captcha.hhcaptcha.captchaKey == "captcha_key"
 
 
 @pytest.mark.asyncio
@@ -233,6 +266,36 @@ async def test_search_vacancy(mock_request, hh_instance):
             "totalUsedFilters": 5,
             "vacancies": [
                 {
+                    "company": {
+                        "@showSimilarVacancies": True,
+                        "@trusted": True,
+                        "@category": "COMPANY",
+                        "@countryId": 1,
+                        "@state": "APPROVED",
+                        "id": 1358439,
+                        "name": "АНО ДО Московская школа программистов",
+                        "visibleName": "АНО ДО Московская школа программистов",
+                        "logos": {
+                            "logo": [
+                                {
+                                    "@type": "ORIGINAL",
+                                    "@url": "/employer-logo-original/1028229.jpg",
+                                }
+                            ],
+                            "@showInSearch": True,
+                        },
+                        "badges": {
+                            "badge": [
+                                {
+                                    "type": "employer-it-accreditation",
+                                    "description": "Работодатель указал, что аккредитован как ИТ-компания",
+                                    "url": "https://feedback.hh.ru/knowledge-base/article/%D1%87%D1%82%D0%BE-%D0%BE%D0%B7%D0%BD%D0%B0%D1%87%D0%B0%D0%B5%D1%82-%D0%B7%D0%BD%D0%B0%D1%87%D0%BE%D0%BA-%C2%AB%D0%B0%D0%BA%D0%BA%D1%80%D0%B5%D0%B4%D0%B8%D1%82%D0%BE%D0%B2%D0%B0%D0%BD%D0%B0-%D0%BA%D0%B0%D0%BA-%D0%B8%D1%82-%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F%C2%BB",
+                                }
+                            ]
+                        },
+                        "companySiteUrl": "http://www.informatics.ru",
+                        "accreditedITEmployer": True,
+                    },
                     "vacancyId": 1,
                     "name": "Python Developer",
                     "type": "open",

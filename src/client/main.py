@@ -6,7 +6,10 @@ import aiosonic
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-from src.client.schemas import MethodEnum, Resume, SearchResponse, Tokens
+from starlette import status
+
+from src.client.exceptions import InvalidCaptcha
+from src.client.schemas import Captcha, MethodEnum, Resume, SearchResponse, Tokens
 from src.config.main import config
 
 
@@ -22,6 +25,9 @@ class HHruClient:
 
         os.makedirs(self.config.folder_tokens, exist_ok=True)
 
+    def build_url(self, path: str) -> str:
+        return urljoin(self.config.url, path)
+
     async def _request(
         self,
         method: MethodEnum,
@@ -32,7 +38,7 @@ class HHruClient:
     ) -> aiosonic.HttpResponse:
         """Сделаем запросы в сторону сайта"""
 
-        url = urljoin(self.config.url, path)
+        url = self.build_url(path)
 
         async with aiosonic.HTTPClient(
             verify_ssl=self.config.verify_ssl,
@@ -164,6 +170,14 @@ class HHruClient:
             data=data,
         )
 
+        resp = Captcha.model_validate(await response.json())
+
+        if resp.hhcaptcha.isBot or resp.recaptcha.isBot:
+            raise InvalidCaptcha(
+                "На авторизации нужна капча",
+                captcha=resp,
+            )
+
         xsrf = (
             response.cookies.get("_xsrf").value
             if response.cookies.get("_xsrf")
@@ -187,6 +201,9 @@ class HHruClient:
 
         return tokens
 
+    async def apply_vacancy(self) -> int:
+        return status.HTTP_200_OK
+
     async def bump_resume(self, resume_href: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
 
@@ -203,7 +220,7 @@ class HHruClient:
             data=data,
         )
 
-        return response.status_code == 200
+        return response.status_code == status.HTTP_200_OK
 
     async def get_resumes(self) -> list[Resume]:
         """Получить все резюме с залогиненого аккаунта"""
@@ -218,7 +235,7 @@ class HHruClient:
 
         result = []
 
-        if response.status_code == 200:
+        if response.status_code == status.HTTP_200_OK:
             soup = BeautifulSoup(await response.text(), "lxml")
 
             noindexes = soup.select("noindex>template")
@@ -264,6 +281,7 @@ class HHruClient:
             headers=headers,
             params=params,
         )
+
         response = await response.json()
 
         result = SearchResponse.model_validate(response)

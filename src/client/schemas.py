@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 
 class SearchClustersOrder(BaseModel):
-    work_schedule_by_days: list[str]
     employment_form: list[str]
     work_format: list[str]
     experience: list[str]
@@ -12,17 +11,15 @@ class SearchClustersOrder(BaseModel):
     area: list[str]
     professional_role: list[str]
     education: list[str]
-    working_hours: list[str]
     label: list[str]
     search_field: list[str]
     excluded_text: list[str]
-    resume: list[str]
 
 
 class SearchCounts(BaseModel):
     isLoad: bool
     value: int
-    usedResumeId: int
+    usedResumeId: int | None
     isSuitableSearch: bool
 
 
@@ -45,7 +42,6 @@ class Criteria(BaseModel):
     saved_search_id: None
     search_session_id: str
     vacancy_id: None
-    resume: str
     no_magic: bool
     ored_clusters: bool
     cache_ttl_sec: None
@@ -61,7 +57,6 @@ class Criteria(BaseModel):
     exclude_archived: bool
     exclude_closed: bool
     search_period: None
-    salary: None
     bottom_left_lat: None
     bottom_left_lng: None
     top_right_lat: None
@@ -78,6 +73,14 @@ class Criteria(BaseModel):
     excluded_text: str
     accept_temporary: None
     use_relations_for_similar: None
+
+
+class Company(BaseModel):
+    id: int
+    name: str
+    visibleName: str
+    companySiteUrl: str
+    accreditedITEmployer: bool
 
 
 class Vacancie(BaseModel):
@@ -107,11 +110,11 @@ class Vacancie(BaseModel):
     show_question_input: bool
     allowChatWithManager: bool
     searchRid: str
+    company: Company
 
 
 class ProxiedSearchFormParams(BaseModel):
     search_session_id: str
-    resume: str
     ored_clusters: bool
     text: str
     enable_snippets: bool
@@ -121,21 +124,6 @@ class ProxiedSearchFormParams(BaseModel):
 class SelectedCluster(BaseModel):
     name: str
     title: str
-
-
-class EmployerReviews(BaseModel):
-    totalRating: str
-    reviewsCount: int
-
-
-class Company(BaseModel):
-    id: int
-    name: str
-    visibleName: str
-    employerOrganizationFormId: int
-    companySiteUrl: str
-    accreditedITEmployer: bool
-    employerReviews: EmployerReviews
 
 
 class Compensation(BaseModel):
@@ -246,6 +234,21 @@ class MethodEnum(Enum):
     head = "head"
     post = "post"
     get = "get"
+
+
+class HHCaptcha(BaseModel):
+    isBot: bool = Field(description="Флаг")
+    captchaKey: str | None = Field(description="Ключ для получения капчи")
+
+
+class ReCaptcha(BaseModel):
+    isBot: bool = Field(description="Флаг")
+    siteKey: str = Field(description="Ключ для получения капчи")
+
+
+class Captcha(BaseModel):
+    recaptcha: ReCaptcha = Field(description="Капча от recaptcha")
+    hhcaptcha: HHCaptcha = Field(description="Капча от hh.ru")
 
 
 class Tokens(BaseModel):
