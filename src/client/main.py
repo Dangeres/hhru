@@ -112,6 +112,13 @@ class HHruClient:
             hhtoken=hhtoken,
         )
 
+    # async def get_captcha(self): # TODO
+    #     response = await self._request(method=MethodEnum.post, path="captcha")
+
+    #     result = await response.json()
+
+    #     return result
+
     async def _get_headers(self) -> dict[str, str]:
         """Получаем заголовки для запросов"""
 
@@ -122,38 +129,18 @@ class HHruClient:
             "x-xsrftoken": f"{self.tokens.xsrf}",
         }
 
-    async def _get_request_data(self) -> str:
-        """Сгенерим все нужные заголовки и хедеры"""
+    async def generate_data(self, data: dict) -> str:
+        result = []
 
-        return (
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="_xsrf"\r\n\r\n{self.tokens.xsrf}\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="backUrl"\r\n\r\nhttps://hh.ru/\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="failUrl"\r\n\r\n/account/login\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="remember"\r\n\r\nyes\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="username"\r\n\r\n{self.config.username}\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="password"\r\n\r\n{self.config.password}\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="username"\r\n\r\n{self.config.username}\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="isBot"\r\n\r\nfalse\r\n--{self.boundary}--\r\n'
-        )
+        for key, value in data.items():
+            result.append(
+                (
+                    f"--{self.boundary}\r\nContent-Disposition: form-data; "
+                    f'name="{key}"\r\n\r\n{value}\r\n'
+                )
+            )
 
-    async def _get_request_data_resume_bump(self, resume_href: str = None) -> str:
-        """Сгенерим все нужные данные для поднятия резюме"""
-
-        return (
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="resume"\r\n\r\n{resume_href}\r\n'
-            f"--{self.boundary}\r\nContent-Disposition: form-data; "
-            f'name="undirectable"\r\n\r\ntrue\r\n'
-            f"--{self.boundary}--\r\n"
-        )
+        return "".join(result)
 
     async def login(self) -> Tokens:
         """Функция для авторизации аккаунта"""
@@ -161,7 +148,17 @@ class HHruClient:
         path = "login"
 
         headers = await self._get_headers()
-        data = await self._get_request_data()
+        data = await self.generate_data(
+            data={
+                "_xsrf": self.tokens.xsrf,
+                "backUrl": "https://hh.ru/",
+                "failUrl": "/account/login",
+                "remember": "yes",
+                "password": self.config.password,
+                "username": self.config.username,
+                "isBot": False,
+            }
+        )
 
         response = await self._request(
             method=MethodEnum.post,
@@ -201,8 +198,34 @@ class HHruClient:
 
         return tokens
 
-    async def apply_vacancy(self) -> int:
-        return status.HTTP_200_OK
+    async def apply_vacancy(
+        self, vacancy_id: int, resume_href: str, letter: str
+    ) -> int:
+        headers = await self._get_headers()
+
+        data = await self.generate_data(
+            data={
+                "_xsrf": self.tokens.xsrf,
+                "vacancy_id": vacancy_id,
+                "resume_hash": resume_href,
+                "ignore_postponed": "true",
+                "incomplete": "false",
+                "letter": letter,
+                "lux": "true",
+                "withoutTest": "no",
+                "hhtmFromLabel": "undefined",
+                "hhtmSourceLabel": "undefined",
+            }
+        )
+
+        response = await self._request(
+            method=MethodEnum.post,
+            path="applicant/vacancy_response/popup",
+            headers=headers,
+            data=data,
+        )
+
+        return response.status_code
 
     async def bump_resume(self, resume_href: str) -> bool:
         """Поднять резюме в поиске для эйчаров"""
@@ -211,7 +234,12 @@ class HHruClient:
 
         headers = await self._get_headers()
 
-        data = await self._get_request_data_resume_bump(resume_href=resume_href)
+        data = await self.generate_data(
+            data={
+                "resume": resume_href,
+                "undirectable": True,
+            }
+        )
 
         response = await self._request(
             method=MethodEnum.post,

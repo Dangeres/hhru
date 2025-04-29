@@ -3,6 +3,14 @@ from dynaconf import Dynaconf
 from pydantic import BaseModel, Field
 
 
+class Search(BaseModel):
+    params: Dict = Field(description="Данные для поиска")
+    resume_href: str = Field(description="Каким резюме откликаться")
+    letter: str = Field(
+        default="", description="Какое сопроводительное письмо пушить при отклике"
+    )
+
+
 class Config(BaseModel):
     username: str = Field(description="Логин авторизации")
     password: str = Field(description="Пароль авторизации")
@@ -18,7 +26,7 @@ class Config(BaseModel):
     vacancy_find_delay: int = Field(
         description="Задержка перед поиском и откликом на вакансии (секунды)"
     )
-    params_search: dict = Field(
+    search: list[Search] = Field(
         description="Параметры для поиска вакансии",
     )
 

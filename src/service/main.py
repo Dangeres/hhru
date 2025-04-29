@@ -72,6 +72,8 @@ class HHruService:
         try:
             tokens = await self.client.login()
         except InvalidCaptcha as err:
+            # captcha = await self.client.get_captcha()
+
             log(
                 self.client.build_url(
                     f"captcha/picture?key={err.captcha.hhcaptcha.captchaKey}"
@@ -139,22 +141,27 @@ class HHruService:
         while True:
             log(f"{self.idle_vacancy_apply.__name__}")
 
-            response = await self.client.search_vacancy(self.config.params_search)
-            raw_vacancy = response.vacancySearchResult.vacancies
+            for search in self.config.search:
+                response = await self.client.search_vacancy(search.params)
+                raw_vacancy = response.vacancySearchResult.vacancies
 
-            vacancy: list[Vacancie] = []
+                vacancy: list[Vacancie] = []
 
-            for vac in raw_vacancy:
-                if vac.company.id not in self.config.black_list_company:
-                    vacancy.append(vac)
+                for vac in raw_vacancy:
+                    if vac.company.id not in self.config.black_list_company:
+                        vacancy.append(vac)
 
-            print(vacancy)
+                print(vacancy)
 
-            for vac in vacancy:
-                result = await self.client.apply_vacancy()
-                # TODO
+                for vac in vacancy:
+                    result = await self.client.apply_vacancy(
+                        vacancy_id=vac.vacancyId,
+                        resume_href=search.resume_href,
+                        letter=search.letter,
+                    )
+                    # TODO
 
-                log(f"<{result}> [{vac.company.name}]: {vac.name}")
+                    log(f"<{result}> [{vac.company.name}]: {vac.name}")
 
             await asyncio.sleep(self.config.vacancy_find_delay)
 

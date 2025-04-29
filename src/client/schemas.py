@@ -238,7 +238,7 @@ class MethodEnum(Enum):
 
 class HHCaptcha(BaseModel):
     isBot: bool = Field(description="Флаг")
-    captchaKey: str | None = Field(description="Ключ для получения капчи")
+    captchaKey: str | None = Field(default=None, description="Ключ для получения капчи")
 
 
 class ReCaptcha(BaseModel):
