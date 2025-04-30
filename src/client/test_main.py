@@ -62,7 +62,7 @@ def mock_request():
 
 
 @pytest.mark.asyncio
-@patch(f"{path}.main.aiosonic.HTTPClient")
+@patch(f"{path}.main.HTTPClient")
 async def test_request(mock_http_client, hh_instance):
     """Тестирование метода _request."""
     mock_response = AsyncMock()
