@@ -76,11 +76,11 @@ class Criteria(BaseModel):
 
 
 class Company(BaseModel):
-    id: int
-    name: str
-    visibleName: str
-    companySiteUrl: str
-    accreditedITEmployer: bool
+    id: int | None = Field(default=None)
+    name: str | None = Field(default=None)
+    visibleName: str | None = Field(default=None)
+    companySiteUrl: str | None = Field(default=None)
+    accreditedITEmployer: bool | None = Field(default=None)
 
 
 class Vacancie(BaseModel):
@@ -110,7 +110,7 @@ class Vacancie(BaseModel):
     show_question_input: bool
     allowChatWithManager: bool
     searchRid: str
-    company: Company
+    company: Company | None = Field(default=None)
     userTestId: int | None = Field(default=None)
     userLabels: list[str] = Field(default=[])
 

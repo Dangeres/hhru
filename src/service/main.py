@@ -148,6 +148,9 @@ class HHruService:
                 vacancy: list[Vacancie] = []
 
                 for vac in raw_vacancy:
+                    if vac.company is None:
+                        continue
+
                     if vac.company.id in self.config.black_list_company:
                         continue
 
@@ -169,7 +172,7 @@ class HHruService:
                     )
                     # TODO
 
-                    log(f"<{result}> [{vac.company.name}]: {vac.name}")
+                    log(f"<{result}> [{vac.company.name}]: {vac.name} {vac.vacancyId}")
 
             await asyncio.sleep(self.config.vacancy_find_delay)
 
