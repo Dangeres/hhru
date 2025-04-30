@@ -3,8 +3,13 @@ from dynaconf import Dynaconf
 from pydantic import BaseModel, Field
 
 
+class ParamsDict(BaseModel):
+    key: str
+    value: str
+
+
 class Search(BaseModel):
-    params: Dict = Field(description="Данные для поиска")
+    params: list[ParamsDict] = Field(description="Данные для поиска")
     resume_href: str = Field(description="Каким резюме откликаться")
     letter: str = Field(
         default="", description="Какое сопроводительное письмо пушить при отклике"

@@ -70,7 +70,7 @@ class Criteria(BaseModel):
     geocode_type: None
     geohash: None
     recommended_by_uid: bool
-    excluded_text: str
+    excluded_text: str | None = Field(default=None)
     accept_temporary: None
     use_relations_for_similar: None
 
@@ -118,9 +118,9 @@ class Vacancie(BaseModel):
 class ProxiedSearchFormParams(BaseModel):
     search_session_id: str
     ored_clusters: bool
-    text: str
+    text: str | None = Field(default=None)
     enable_snippets: bool | None = Field(default=None)
-    excluded_text: str
+    excluded_text: str | None = Field(default=None)
 
 
 class SelectedCluster(BaseModel):

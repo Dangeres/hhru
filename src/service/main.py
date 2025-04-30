@@ -136,6 +136,8 @@ class HHruService:
             await asyncio.sleep(sleep_time)
 
     async def idle_vacancy_apply(self):
+        log(f"{self.idle_vacancy_apply.__name__} flag {self.config.apply_vacancy=}")
+
         while self.config.apply_vacancy:
             log(f"{self.idle_vacancy_apply.__name__}")
 

@@ -1,16 +1,16 @@
 import json
 import os
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote_plus
 
-import aiosonic
+from aiosonic import HttpResponse, HTTPClient
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
 from starlette import status
 
-from src.client.exceptions import InvalidCaptcha
+from src.client.exceptions import InvalidCaptcha, TokenError
 from src.client.schemas import Captcha, MethodEnum, Resume, SearchResponse, Tokens
-from src.config.main import config
+from src.config.main import ParamsDict, config
 
 
 class HHruClient:
@@ -28,19 +28,34 @@ class HHruClient:
     def build_url(self, path: str) -> str:
         return urljoin(self.config.url, path)
 
+    def build_params(self, params: list[ParamsDict] | None) -> str:
+        buffer = []
+
+        for param in params or []:
+            buffer.append(f"{param.key}={param.value}")
+
+        if len(buffer) == 0:
+            return ""
+
+        result = quote_plus("&".join(buffer))
+
+        return f"?{result}"
+
     async def _request(
         self,
         method: MethodEnum,
         path: str,
         headers: dict[str, str] | None = None,
-        data: str | bytes = None,
-        params: dict[str, str] | None = None,
-    ) -> aiosonic.HttpResponse:
+        data: str | bytes | None = None,
+        params: list[ParamsDict] | None = None,
+    ) -> HttpResponse:
         """Сделаем запросы в сторону сайта"""
 
-        url = self.build_url(path)
+        prapared_params = self.build_params(params)
 
-        async with aiosonic.HTTPClient(
+        url = self.build_url(f"{path}{prapared_params}")
+
+        async with HTTPClient(
             verify_ssl=self.config.verify_ssl,
             proxy=self.config.proxy,
         ) as session:
@@ -50,7 +65,6 @@ class HHruClient:
                         url=url,
                         headers=headers,
                         data=data,
-                        params=params,
                     )
 
                     return result
@@ -59,7 +73,6 @@ class HHruClient:
                     result = await session.get(
                         url=url,
                         headers=headers,
-                        params=params,
                     )
 
                     return result
@@ -69,7 +82,6 @@ class HHruClient:
                         url=url,
                         headers=headers,
                         data=data,
-                        params=params,
                     )
 
                     return result
@@ -95,21 +107,15 @@ class HHruClient:
             method=MethodEnum.head, path=path, headers=headers
         )
 
-        xsrf = (
-            response.cookies.get("_xsrf").value
-            if response.cookies.get("_xsrf")
-            else None
-        )
+        xsrf = response.cookies.get("_xsrf")
+        hhtoken = response.cookies.get("hhtoken")
 
-        hhtoken = (
-            response.cookies.get("hhtoken").value
-            if response.cookies.get("hhtoken")
-            else None
-        )
+        if not xsrf or not hhtoken:
+            raise TokenError("Не смог найти токен")
 
         return Tokens(
-            xsrf=xsrf,
-            hhtoken=hhtoken,
+            xsrf=xsrf.value,
+            hhtoken=hhtoken.value,
         )
 
     # async def get_captcha(self): # TODO
@@ -121,6 +127,9 @@ class HHruClient:
 
     async def _get_headers(self) -> dict[str, str]:
         """Получаем заголовки для запросов"""
+
+        if not self.tokens:
+            raise TokenError("Не смог найти токены для генерации заголовков")
 
         return {
             "content-type": f"multipart/form-data; boundary={self.boundary}",
@@ -175,28 +184,17 @@ class HHruClient:
                 captcha=resp,
             )
 
-        xsrf = (
-            response.cookies.get("_xsrf").value
-            if response.cookies.get("_xsrf")
-            else None
-        )
+        xsrf = response.cookies.get("_xsrf")
+        hhtoken = response.cookies.get("hhtoken")
 
-        hhtoken = (
-            response.cookies.get("hhtoken").value
-            if response.cookies.get("hhtoken")
-            else None
-        )
-
-        try:
-            tokens = Tokens(
-                xsrf=xsrf,
-                hhtoken=hhtoken,
-            )
-        except Exception as err:
+        if not xsrf or not hhtoken:
             print(await response.text())
-            raise err
+            raise TokenError("Не смог найти токен")
 
-        return tokens
+        return Tokens(
+            xsrf=xsrf.value,
+            hhtoken=hhtoken.value,
+        )
 
     async def apply_vacancy(
         self, vacancy_id: int, resume_href: str, letter: str
@@ -290,7 +288,7 @@ class HHruClient:
 
         return result
 
-    async def search_vacancy(self, params: dict[str, str]) -> SearchResponse:
+    async def search_vacancy(self, params: list[ParamsDict]) -> SearchResponse:
         """
         Функция поиска открытых вакансий на сайте hh.ru
 
@@ -310,7 +308,16 @@ class HHruClient:
             params=params,
         )
 
+        resp = await response.text()
+
+        print(resp)
+
         response = await response.json()
+
+        # print(response.get("vacancySearchResult", {}).get("vacancies", []))
+
+        with open("search_vacancy_response.json", "w+") as f:
+            json.dump(response, f, indent="  ")
 
         result = SearchResponse.model_validate(response)
 

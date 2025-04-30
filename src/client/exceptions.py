@@ -8,3 +8,10 @@ class InvalidCaptcha(Exception):
         super().__init__(message)
 
         self.captcha = captcha
+
+
+class TokenError(Exception):
+    """Если не смогли найти токены, используем эту ошибочку"""
+
+    def __init__(self, message: str):
+        super().__init__(message)

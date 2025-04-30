@@ -12,30 +12,37 @@ default: &default_config
   search: [
     {
       "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
-      "params": {
-        "ored_clusters": true,
-        "enable_snippets": false,
-        "area": 1,
-        "items_on_page": 100,
-        "excluded_text": "qa,ml",
-        "label": "not_from_agency",
-        "search_field": "name",
-        "text": "python senior"
-      },
-      "letter": "🔥",
+      "params": [
+        {"key": "ored_clusters", "value": "true"},
+        {"key": "enable_snippets", "value": "false"},
+        {"key": "area", "value": "1"},
+        {"key": "items_on_page", "value": "100"},
+        {"key": "excluded_text", "value": "qa,ml,преподаватель,конструктор,c++"},
+        {"key": "label", "value": "not_from_agency"},
+        {"key": "search_field", "value": "name"},
+        # {"key": "search_field", "value": "company_name"},
+        {"key": "search_field", "value": "description"},
+        {"key": "order_by", "value": "publication_time"},
+        {"key": "text", "value": "python senior"},
+      ],
+      "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
     }, {
       "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
-      "params": {
-        "ored_clusters": true,
-        "enable_snippets": false,
-        "area": 1,
-        "items_on_page": 100,
-        "excluded_text": "qa,ml",
-        "label": "not_from_agency",
-        "search_field": "name",
-        "text": "golang middle"
-      },
-      "letter": "🔥",
+      "params": [
+        {"key": "ored_clusters", "value": "true"},
+        {"key": "enable_snippets", "value": "false"},
+        {"key": "area", "value": "1"},
+        {"key": "items_on_page", "value": "100"},
+        {"key": "excluded_text", "value": "qa,ml,преподаватель,конструктор,c++"},
+        {"key": "label", "value": "not_from_agency"},
+        {"key": "search_field", "value": "name"},
+        # {"key": "search_field", "value": "company_name"},
+        {"key": "search_field", "value": "description"},
+        {"key": "order_by", "value": "publication_time"},
+        {"key": "text", "value": "golang middle"},
+      ],
+      "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
+      # "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта. В последнее время активно изучаю Go и рассматриваю возможность перехода на него как на основной стек.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
     }
   ]
 

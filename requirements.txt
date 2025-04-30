@@ -19,6 +19,8 @@ idna==3.10
 iniconfig==2.1.0
 lxml==5.4.0
 multidict==6.4.3
+mypy==1.15.0
+mypy_extensions==1.1.0
 onecache==0.7.1
 orderedmultidict==1.0.1
 packaging==25.0
