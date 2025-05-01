@@ -32,12 +32,12 @@ class HHruClient:
         buffer = []
 
         for param in params or []:
-            buffer.append(f"{param.key}={param.value}")
+            buffer.append(f"{param.key}={quote_plus(param.value)}")
 
         if len(buffer) == 0:
             return ""
 
-        result = quote_plus("&".join(buffer))
+        result = "&".join(buffer)
 
         return f"?{result}"
 
@@ -317,7 +317,7 @@ class HHruClient:
         # print(response.get("vacancySearchResult", {}).get("vacancies", []))
 
         with open("search_vacancy_response.json", "w+") as f:
-            json.dump(response, f, indent="  ")
+            json.dump(response, f, indent="  ", ensure_ascii=False)
 
         result = SearchResponse.model_validate(response)
 
