@@ -107,8 +107,6 @@ class Vacancie(BaseModel):
     contactInfo: None
     responsesCount: int
     totalResponsesCount: int
-    show_question_input: bool
-    allowChatWithManager: bool
     searchRid: str
     company: Company | None = Field(default=None)
     userTestId: int | None = Field(default=None)

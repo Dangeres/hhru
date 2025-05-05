@@ -67,6 +67,8 @@ class HHruService:
         if tokens is None:
             tokens = await self.client.get_tokens_anonymous()
 
+            tokens = await self.client.set_tokens(tokens)
+
             try:
                 tokens = await self.client.login()
             except InvalidCaptcha as err:
