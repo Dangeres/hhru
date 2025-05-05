@@ -1,4 +1,7 @@
-.vscode
+.git
 __pycache__
+.vscode
 env
-images
+.env
+.venv
+/images

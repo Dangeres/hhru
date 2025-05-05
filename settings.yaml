@@ -1,0 +1,58 @@
+default: &default_config
+  username: "default_username"       # Значение по умолчанию для логина
+  password: "default_password"       # Значение по умолчанию для пароля
+  folder_tokens: "tokens"            # Путь к токенам сессии
+  url: "http://127.0.0.1/"              # URL сайта hh
+  verify_ssl: false                  # Проверка SSL
+  proxy: null                        # Прокси (по умолчанию отсутствует)
+  black_list_company: []             # Черный список компаний для скипа отклика (взять из ссылки https://hh.ru/employer/1740)
+  bump_resume: false                  # Поднимаем резюме в поиске для эйчаров
+  apply_vacancy: true                # Откликаемся на вакансии
+  vacancy_find_delay: 14400          # Задержка перед поиском вакансий в секундах (4 часа)
+  search: [
+    {
+      "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
+      "params": [
+        {"key": "ored_clusters", "value": "true"},
+        {"key": "enable_snippets", "value": "false"},
+        {"key": "area", "value": "1"},
+        {"key": "items_on_page", "value": "100"},
+        {"key": "excluded_text", "value": "qa,ml,преподаватель,конструктор,c++"},
+        {"key": "label", "value": "not_from_agency"},
+        {"key": "search_field", "value": "name"},
+        # {"key": "search_field", "value": "company_name"},
+        {"key": "search_field", "value": "description"},
+        {"key": "order_by", "value": "publication_time"},
+        {"key": "text", "value": "python senior"},
+      ],
+      "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
+    }, {
+      "resume_href": "dd41fba3ff0c4a4ee60039ed1f5a56586a576e",
+      "params": [
+        {"key": "ored_clusters", "value": "true"},
+        {"key": "enable_snippets", "value": "false"},
+        {"key": "area", "value": "1"},
+        {"key": "items_on_page", "value": "100"},
+        {"key": "excluded_text", "value": "qa,ml,преподаватель,конструктор,c++"},
+        {"key": "label", "value": "not_from_agency"},
+        {"key": "search_field", "value": "name"},
+        # {"key": "search_field", "value": "company_name"},
+        {"key": "search_field", "value": "description"},
+        {"key": "order_by", "value": "publication_time"},
+        {"key": "text", "value": "golang middle"},
+      ],
+      "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
+      # "letter": "Доброго времени суток!\n\nМеня зовут Дмитрий, я backend-разработчик с 7+ годами опыта. В последнее время активно изучаю Go и рассматриваю возможность перехода на него как на основной стек.\n\nБуду рад пообщаться, познакомиться с вашей командой и обсудить, как могу быть полезен в ваших задачах.\n\nСвязь удобнее всего через Telegram: @panicgo\n\nПриятных вечеров и интересных проектов!",
+    }
+  ]
+
+dev:
+  <<: *default_config                # Наследование всех значений из default
+  username: "dev_username"
+  password: "dev_password"
+  url: "https://hh.ru/"              # URL сайта hh
+  black_list_company: [
+    1740, # Яндекс
+    3529, # Сбер
+  ]
+  bump_resume: true 
