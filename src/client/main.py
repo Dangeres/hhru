@@ -55,6 +55,8 @@ class HHruClient:
 
         url = self.build_url(f"{path}{prapared_params}")
 
+        print(f'URL FOR REQUEST = {url}')
+
         async with HTTPClient(
             verify_ssl=self.config.verify_ssl,
             proxy=self.config.proxy,
